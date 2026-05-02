@@ -1,420 +1,329 @@
-```react
-import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, User, Users, AlertTriangle, Navigation, Crosshair, Phone, ShieldAlert, Languages, Compass, Volume2, LogIn, UsersRound, Copy, Info, CheckCircle2 } from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp } from 'firebase/firestore';
 
-// ============================================================================
-// Google Maps API Key (Aapki di hui key)
-const GOOGLE_MAPS_API_KEY = "AIzaSyC_uP3i3qFk31xZfY6br09DI-LjA60aC_c"; 
-// ============================================================================
-
-// --- Firebase Init ---
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'saathi-tracker-pro';
-
-// --- Multi-Language Dictionary ---
-const translations = {
-  hi: {
-    appTitle: "Saathi", appPro: "Pro",
-    group: "Group", map: "Map", sos: "SOS",
-    yourDetails: "Aapki Details", nameHint: "Aapka Pura Naam", phoneHint: "Aapka Mobile No.",
-    createGroup: "Naya Group Banayein", createDesc: "Apne parivar ke liye group banayein aur ek WhatsApp number set karein.",
-    emergencyHint: "Emergency WhatsApp No.", createBtn: "Group Create Karein",
-    or: "YA", joinGroup: "Group Join Karein", joinDesc: "Apne saathi ka diya gaya 5-digit code dalein.",
-    joinBtn: "Join Karein", activeGroup: "Group Active Hai", activeDesc: "Naye saathiyon ko add karne ke liye Code bhejein.",
-    groupCode: "Aapka Group Code", leaveBtn: "Group Chhodein",
-    offlineTitle: "Aap Offline Hain", offlineDesc: "Map par dusron ko dekhne ke liye 'Group' tab me jaakar code dalein ya naya group banayein.",
-    goGroupBtn: "Group Page Par Jayein",
-    directions: "Disha aur Suraksha", outOfRange: "Saathi door hai!", doori: "Doori",
-    sosTitle: "Emergency SOS", sosDesc: "Bheed me kho jane par yeh button dabayein. Admin ke WhatsApp par aapki Live Map Location turant bhej di jayegi.",
-    adminNo: "Admin WhatsApp No.", sosBtn: "SOS BHEJEIN",
-    confirmSOS: "Kya aap Confirm hain?", confirmDesc: "Yeh Voice Alert ke sath WhatsApp khol dega aur aapki location bhej dega.",
-    yesSOS: "Haan, Bhejein", cancel: "Cancel",
-    voiceAlertText: "Emergency alert bheja ja raha hai. Kripya madad karein.",
-    setMeetup: "Kya aap yahan Milne ki Jagah (Meetup Point) banana chahte hain?", meetupSet: "Meetup Point set ho gaya!",
-    meetupTip: "Tip: Map par click karke Meetup Point (Milne ki jagah) set karein.",
-    noMembers: "Abhi is group me sirf aap hain."
-  },
-  en: {
-    appTitle: "Saathi", appPro: "Pro",
-    group: "Group", map: "Map", sos: "SOS",
-    yourDetails: "Your Details", nameHint: "Your Full Name", phoneHint: "Your Mobile No.",
-    createGroup: "Create New Group", createDesc: "Create a group for your family and set an emergency WhatsApp number.",
-    emergencyHint: "Emergency WhatsApp No.", createBtn: "Create Group",
-    or: "OR", joinGroup: "Join Group", joinDesc: "Enter the 5-digit code provided by your companion.",
-    joinBtn: "Join Now", activeGroup: "Group is Active", activeDesc: "Share this code with others to add them.",
-    groupCode: "Your Group Code", leaveBtn: "Leave Group",
-    offlineTitle: "You are Offline", offlineDesc: "To see others on the map, go to the 'Group' tab and join or create a group.",
-    goGroupBtn: "Go to Group Page",
-    directions: "Direction & Safety", outOfRange: "Out of range!", doori: "Distance",
-    sosTitle: "Emergency SOS", sosDesc: "Press this button if you are lost in the crowd. Your Live Map Location will be sent to the Admin's WhatsApp.",
-    adminNo: "Admin WhatsApp No.", sosBtn: "SEND SOS",
-    confirmSOS: "Are you sure?", confirmDesc: "This will sound a Voice Alert and open WhatsApp with your location.",
-    yesSOS: "Yes, Send Alert", cancel: "Cancel",
-    voiceAlertText: "Emergency alert is being sent. Please help.",
-    setMeetup: "Do you want to set this as the Meetup Point?", meetupSet: "Meetup Point set successfully!",
-    meetupTip: "Tip: Click anywhere on the map to set a Meetup Point.",
-    noMembers: "You are the only one in this group right now."
-  },
-  ar: {
-    appTitle: "رفيق", appPro: "برو",
-    group: "مجموعة", map: "خريطة", sos: "نجدة",
-    yourDetails: "تفاصيلك", nameHint: "الاسم الكامل", phoneHint: "رقم الجوال",
-    createGroup: "إنشاء مجموعة جديدة", createDesc: "قم بإنشاء مجموعة لعائلتك وقم بتعيين رقم واتساب للطوارئ.",
-    emergencyHint: "رقم واتساب للطوارئ", createBtn: "إنشاء مجموعة",
-    or: "أو", joinGroup: "انضمام إلى مجموعة", joinDesc: "أدخل الرمز المكون من 5 أرقام المكون من قبل رفيقك.",
-    joinBtn: "انضم الآن", activeGroup: "المجموعة نشطة", activeDesc: "شارك هذا الرمز مع الآخرين لإضافتهم.",
-    groupCode: "رمز المجموعة", leaveBtn: "مغادرة المجموعة",
-    offlineTitle: "أنت غير متصل", offlineDesc: "لرؤية الآخرين على الخريطة، اذهب إلى علامة التبويب 'المجموعة' وانضم أو أنشئ مجموعة.",
-    goGroupBtn: "الذهاب إلى صفحة المجموعة",
-    directions: "الاتجاه والسلامة", outOfRange: "خارج النطاق!", doori: "المسافة",
-    sosTitle: "طوارئ SOS", sosDesc: "اضغط على هذا الزر إذا ضللت الطريق. سيتم إرسال موقعك المباشر إلى المشرف.",
-    adminNo: "رقم المشرف", sosBtn: "إرسال نداء",
-    confirmSOS: "هل أنت متأكد؟", confirmDesc: "سيؤدي هذا إلى إصدار تنبيه صوتي وفتح واتساب بموقعك.",
-    yesSOS: "نعم، أرسل", cancel: "إلغاء",
-    voiceAlertText: "يتم إرسال تنبيه الطوارئ. الرجاء المساعدة.",
-    setMeetup: "هل تريد تعيين هذه النقطة كنقطة التقاء؟", meetupSet: "تم تعيين نقطة الالتقاء بنجاح!",
-    meetupTip: "تلميح: انقر على الخريطة لتعيين نقطة التقاء.",
-    noMembers: "أنت الوحيد في هذه المجموعة الآن."
-  }
-};
-
-// --- Math Utilities ---
-function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-  const R = 6371; 
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}
-
-function getBearing(lat1, lon1, lat2, lon2) {
-  const y = Math.sin((lon2 - lon1) * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180));
-  const x = Math.cos(lat1 * (Math.PI / 180)) * Math.sin(lat2 * (Math.PI / 180)) - Math.sin(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.cos((lon2 - lon1) * (Math.PI / 180));
-  return (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
-}
-
-// --- Google Maps Script Loader ---
-const useGoogleMaps = (apiKey) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  useEffect(() => {
-    if (window.google) { setIsLoaded(true); return; }
-    if (!apiKey) return;
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
-    script.async = true; script.defer = true;
-    script.onload = () => setIsLoaded(true);
-    document.head.appendChild(script);
-  }, [apiKey]);
-  return isLoaded;
-};
-
-// =========================================================
-// Google Map Component 
-// =========================================================
-const GoogleMapView = ({ myLocation, companions, isLoaded, meetupPoint, onMapClick }) => {
-  const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const markersRef = useRef({});
-  const myMarkerRef = useRef(null);
-  const meetupMarkerRef = useRef(null);
-  const circleRef = useRef(null);
-
-  const defaultLoc = { lat: 21.4225, lng: 39.8262 };
-
-  // Init Map
-  useEffect(() => {
-    if (isLoaded && mapRef.current && !mapInstanceRef.current && window.google) {
-      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
-        center: myLocation || defaultLoc, zoom: 17, disableDefaultUI: true, zoomControl: true, mapTypeId: 'roadmap'
-      });
-      mapInstanceRef.current.addListener('click', (e) => { 
-          if(onMapClick) onMapClick({ lat: e.latLng.lat(), lng: e.latLng.lng() }); 
-      });
-    }
-  }, [isLoaded]);
-
-  // My Location & Geofence
-  useEffect(() => {
-    if (mapInstanceRef.current && window.google) {
-      const loc = myLocation || defaultLoc;
-      
-      if (!myMarkerRef.current) {
-        myMarkerRef.current = new window.google.maps.Marker({
-          position: loc, map: mapInstanceRef.current,
-          icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#2563eb', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
-          zIndex: 1000
-        });
-        mapInstanceRef.current.panTo(loc);
-      } else {
-        myMarkerRef.current.setPosition(loc);
-      }
-
-      if (circleRef.current) circleRef.current.setMap(null);
-      if (myLocation) {
-          circleRef.current = new window.google.maps.Circle({
-              strokeColor: "#10b981", strokeOpacity: 0.3, strokeWeight: 1, fillColor: "#10b981", fillOpacity: 0.08,
-              map: mapInstanceRef.current, center: myLocation, radius: 300 
-          });
-      }
-    }
-  }, [myLocation, isLoaded]);
-
-  // Meetup Point
-  useEffect(() => {
-      if (mapInstanceRef.current && window.google && meetupPoint) {
-          if (meetupMarkerRef.current) meetupMarkerRef.current.setMap(null);
-          meetupMarkerRef.current = new window.google.maps.Marker({
-              position: meetupPoint, map: mapInstanceRef.current,
-              icon: { path: 'M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z', fillColor: '#10b981', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 1, scale: 1.5 },
-              zIndex: 950
-          });
-      }
-  }, [meetupPoint, isLoaded]);
-
-  // Companions
-  useEffect(() => {
-    if (mapInstanceRef.current && window.google) {
-      companions.forEach(comp => {
-        if (!markersRef.current[comp.id]) {
-          const info = new window.google.maps.InfoWindow({ content: `<div style="color:#000;font-weight:bold;padding:4px;font-size:12px;">${comp.name}</div>`, disableAutoPan:true });
-          const marker = new window.google.maps.Marker({
-            position: { lat: comp.lat, lng: comp.lng }, map: mapInstanceRef.current,
-            icon: { path: window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 6, fillColor: comp.color || '#f59e0b', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }, zIndex: 900
-          });
-          info.open(mapInstanceRef.current, marker);
-          markersRef.current[comp.id] = { marker, info };
-        } else {
-          markersRef.current[comp.id].marker.setPosition({ lat: comp.lat, lng: comp.lng });
-        }
-      });
-      
-      const ids = companions.map(c => c.id);
-      Object.keys(markersRef.current).forEach(id => {
-        if (!ids.includes(id)) { 
-            markersRef.current[id].marker.setMap(null); 
-            markersRef.current[id].info.close(); 
-            delete markersRef.current[id]; 
-        }
-      });
-    }
-  }, [companions, isLoaded]);
-
-  const recenterMap = () => {
-    if (mapInstanceRef.current && myLocation) {
-      mapInstanceRef.current.panTo(myLocation);
-      mapInstanceRef.current.setZoom(17);
-    }
-  };
-
-  return (
-    <div className="relative w-full h-[35vh] min-h-[300px] rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-        <div ref={mapRef} className="w-full h-full bg-slate-100 flex items-center justify-center">
-             {!isLoaded && <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>}
-        </div>
-        <button onClick={recenterMap} className="absolute right-3 bottom-6 z-20 w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-lg border border-slate-100 hover:bg-slate-50 transition-all active:scale-95">
-          <Crosshair size={24} />
-        </button>
-    </div>
-  );
-};
-
-
-// =========================================================
-// Main App Root
-// =========================================================
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [lang, setLang] = useState('hi');
-  const t = translations[lang];
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Saathi Live - Hajj Umrah Tracker</title>
   
-  const [activeTab, setActiveTab] = useState('group');
-  const [myLocation, setMyLocation] = useState(null);
-  const [companions, setCompanions] = useState([]);
-  const [groupId, setGroupId] = useState('');
-  const [groupEmergencyPhone, setGroupEmergencyPhone] = useState('');
-  const [meetupPoint, setMeetupPoint] = useState(null);
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
   
-  const [myName, setMyName] = useState('');
-  const [myPhone, setMyPhone] = useState('');
-  const [createEmergencyPhone, setCreateEmergencyPhone] = useState('');
-  const [joinCode, setJoinCode] = useState('');
-  const [myColor, setMyColor] = useState('#3b82f6');
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
-  const [showModal, setShowModal] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [toastMsg, setToastMsg] = useState('');
-  
-  const isMapLoaded = useGoogleMaps(GOOGLE_MAPS_API_KEY);
+  <!-- Babel compiler for React -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  // --- Auth Setup ---
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (e) { console.error("Auth error", e); }
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    .dir-rtl { direction: rtl; }
+    .dir-ltr { direction: ltr; }
+  </style>
+</head>
+<body class="bg-slate-50">
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    // Firebase Imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const { useState, useEffect, useRef } = React;
+
+    // ============================================================================
+    // 🔴 1. AAPKI GOOGLE MAPS API KEY 🔴
+    const GOOGLE_MAPS_API_KEY = "AIzaSyC_uP3i3qFk31xZfY6br09DI-LjA60aC_c"; 
+
+    // 🔴 2. FIREBASE DATABASE KEYS 🔴
+    // Asli location share karne ke liye yahan apne Firebase Project ki keys zaroor dalein
+    const firebaseConfig = {
+      // apiKey: "AIza...",
+      // authDomain: "...",
+      // projectId: "...",
+      // storageBucket: "...",
+      // messagingSenderId: "...",
+      // appId: "..."
     };
-    initAuth();
-    
-    const unsub = onAuthStateChanged(auth, (u) => {
-        setUser(u);
-        const colors = ['#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
-        setMyColor(colors[Math.floor(Math.random() * colors.length)]);
-    });
-    return () => unsub();
-  }, []);
+    // ============================================================================
 
-  // --- GPS Tracking ---
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-    const watchId = navigator.geolocation.watchPosition(
-      (p) => setMyLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      (err) => { setMyLocation({ lat: 21.4225, lng: 39.8262 }); }, // Fallback Mecca
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+    // Safe Firebase Init
+    let app, auth, db;
+    const isFirebaseConfigured = Object.keys(firebaseConfig).length > 0;
+    if (isFirebaseConfigured) {
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch(e) { console.error("Firebase Error", e); }
+    }
+    const appId = 'saathi-tracker-pro';
+
+    // --- Icons (SVG) ---
+    const SvgIcon = ({ paths, size = 24, className = "" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{__html: paths}} />
     );
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+    const Navigation = (p) => <SvgIcon paths='<polygon points="3 11 22 2 13 21 11 13 3 11"/>' {...p}/>;
+    const User = (p) => <SvgIcon paths='<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' {...p}/>;
+    const UsersRound = (p) => <SvgIcon paths='<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' {...p}/>;
+    const LogIn = (p) => <SvgIcon paths='<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/>' {...p}/>;
+    const Copy = (p) => <SvgIcon paths='<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>' {...p}/>;
+    const AlertTriangle = (p) => <SvgIcon paths='<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>' {...p}/>;
+    const Compass = (p) => <SvgIcon paths='<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>' {...p}/>;
+    const MapPin = (p) => <SvgIcon paths='<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 0-16 0Z"/><circle cx="12" cy="10" r="3"/>' {...p}/>;
+    const ShieldAlert = (p) => <SvgIcon paths='<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/>' {...p}/>;
+    const Phone = (p) => <SvgIcon paths='<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>' {...p}/>;
+    const Crosshair = (p) => <SvgIcon paths='<circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/>' {...p}/>;
+    const Info = (p) => <SvgIcon paths='<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>' {...p}/>;
+    const Languages = (p) => <SvgIcon paths='<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>' {...p}/>;
+    const Volume2 = (p) => <SvgIcon paths='<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>' {...p}/>;
+    const CheckCircle2 = (p) => <SvgIcon paths='<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' {...p}/>;
 
-  // --- Cloud Sync ---
-  useEffect(() => {
-    if (!user || !groupId || !myLocation || !myName.trim()) return;
-    
-    const sync = async () => {
-      try {
-        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `group_${groupId}`, user.uid), {
-            id: user.uid, name: myName.trim(), phone: myPhone.trim(), lat: myLocation.lat, lng: myLocation.lng, color: myColor, lastUpdated: serverTimestamp()
-        }, { merge: true });
-      } catch(e) { console.error("Sync failed", e); }
+    // --- Translations ---
+    const translations = {
+      hi: {
+        appTitle: "Saathi", appPro: "Pro", group: "Group", map: "Map", sos: "SOS",
+        yourDetails: "Aapki Details", nameHint: "Aapka Pura Naam", phoneHint: "Aapka Mobile No.",
+        createGroup: "Naya Group Banayein", createDesc: "Apne parivar ke liye group banayein.",
+        emergencyHint: "Emergency WhatsApp No.", createBtn: "Group Create Karein",
+        or: "YA", joinGroup: "Group Join Karein", joinDesc: "Apne saathi ka 5-digit code dalein.",
+        joinBtn: "Join Karein", activeGroup: "Group Active Hai", activeDesc: "Naye saathiyon ko add karne ke liye Code bhejein.",
+        groupCode: "Aapka Group Code", leaveBtn: "Group Chhodein",
+        offlineTitle: "Aap Offline Hain", offlineDesc: "Dusron ko dekhne ke liye 'Group' tab me jaakar code dalein.",
+        goGroupBtn: "Group Page Par Jayein", directions: "Disha aur Suraksha", outOfRange: "Saathi door hai!", doori: "Doori",
+        sosTitle: "Emergency SOS", sosDesc: "Bheed me kho jane par dabayein. WhatsApp par location jayegi.",
+        adminNo: "Admin WhatsApp No.", sosBtn: "SOS BHEJEIN",
+        confirmSOS: "Kya aap Confirm hain?", confirmDesc: "Voice Alert ke sath WhatsApp khul jayega.",
+        yesSOS: "Haan, Bhejein", cancel: "Cancel", voiceAlertText: "Emergency alert bheja ja raha hai.",
+        setMeetup: "Kya aap yahan Milne ki Jagah (Meetup) banana chahte hain?", meetupSet: "Meetup Point set ho gaya!",
+        meetupTip: "Tip: Map par click karke Meetup Point set karein.", noMembers: "Abhi group me sirf aap hain."
+      },
+      en: {
+        appTitle: "Saathi", appPro: "Pro", group: "Group", map: "Map", sos: "SOS",
+        yourDetails: "Your Details", nameHint: "Your Full Name", phoneHint: "Your Mobile No.",
+        createGroup: "Create New Group", createDesc: "Create a group and set an emergency WhatsApp number.",
+        emergencyHint: "Emergency WhatsApp No.", createBtn: "Create Group",
+        or: "OR", joinGroup: "Join Group", joinDesc: "Enter the 5-digit code provided by your companion.",
+        joinBtn: "Join Now", activeGroup: "Group is Active", activeDesc: "Share this code with others to add them.",
+        groupCode: "Your Group Code", leaveBtn: "Leave Group",
+        offlineTitle: "You are Offline", offlineDesc: "Go to the 'Group' tab and join or create a group to see others.",
+        goGroupBtn: "Go to Group Page", directions: "Direction & Safety", outOfRange: "Out of range!", doori: "Distance",
+        sosTitle: "Emergency SOS", sosDesc: "Press this if lost. Your Live Map Location will be sent to WhatsApp.",
+        adminNo: "Admin WhatsApp No.", sosBtn: "SEND SOS",
+        confirmSOS: "Are you sure?", confirmDesc: "This will sound an Alert and open WhatsApp with your location.",
+        yesSOS: "Yes, Send", cancel: "Cancel", voiceAlertText: "Emergency alert is being sent.",
+        setMeetup: "Set this as the Meetup Point?", meetupSet: "Meetup Point set successfully!",
+        meetupTip: "Tip: Click on the map to set a Meetup Point.", noMembers: "You are the only one in this group."
+      },
+      ar: {
+        appTitle: "رفيق", appPro: "برو", group: "مجموعة", map: "خريطة", sos: "نجدة",
+        yourDetails: "تفاصيلك", nameHint: "الاسم الكامل", phoneHint: "رقم الجوال",
+        createGroup: "إنشاء مجموعة جديدة", createDesc: "قم بإنشاء مجموعة وقم بتعيين رقم واتساب للطوارئ.",
+        emergencyHint: "رقم واتساب للطوارئ", createBtn: "إنشاء مجموعة",
+        or: "أو", joinGroup: "انضمام إلى مجموعة", joinDesc: "أدخل الرمز المكون من 5 أرقام.",
+        joinBtn: "انضم الآن", activeGroup: "المجموعة نشطة", activeDesc: "شارك هذا الرمز مع الآخرين لإضافتهم.",
+        groupCode: "رمز المجموعة", leaveBtn: "مغادرة المجموعة",
+        offlineTitle: "أنت غير متصل", offlineDesc: "اذهب إلى علامة التبويب 'المجموعة' وانضم أو أنشئ مجموعة.",
+        goGroupBtn: "الذهاب إلى صفحة المجموعة", directions: "الاتجاه والسلامة", outOfRange: "خارج النطاق!", doori: "المسافة",
+        sosTitle: "طوارئ SOS", sosDesc: "اضغط إذا ضللت الطريق. سيتم إرسال موقعك إلى المشرف.",
+        adminNo: "رقم المشرف", sosBtn: "إرسال نداء",
+        confirmSOS: "هل أنت متأكد؟", confirmDesc: "سيؤدي هذا إلى إصدار تنبيه وفتح واتساب بموقعك.",
+        yesSOS: "نعم، أرسل", cancel: "إلغاء", voiceAlertText: "يتم إرسال تنبيه الطوارئ.",
+        setMeetup: "تعيين كنقطة التقاء؟", meetupSet: "تم تعيين نقطة الالتقاء!",
+        meetupTip: "تلميح: انقر لتعيين نقطة التقاء.", noMembers: "أنت الوحيد في هذه المجموعة الآن."
+      }
+    };
+
+    // Math Utils
+    function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+      const R = 6371; const dLat = (lat2 - lat1) * (Math.PI / 180); const dLon = (lon2 - lon1) * (Math.PI / 180);
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
-    sync();
-    const interval = setInterval(sync, 4000);
-    return () => clearInterval(interval);
-  }, [user, groupId, myLocation, myName, myPhone, myColor]);
+    function getBearing(lat1, lon1, lat2, lon2) {
+      const y = Math.sin((lon2 - lon1) * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180));
+      const x = Math.cos(lat1 * (Math.PI / 180)) * Math.sin(lat2 * (Math.PI / 180)) - Math.sin(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.cos((lon2 - lon1) * (Math.PI / 180));
+      return (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+    }
 
-  // --- Group Data Listener ---
-  useEffect(() => {
-    if (!user || !groupId) return;
-    
-    const unsubMeta = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'groups_meta', groupId), (d) => {
-        if(d.exists()) {
-            setGroupEmergencyPhone(d.data().emergencyPhone);
-            if(d.data().meetupPoint) setMeetupPoint(d.data().meetupPoint);
+    const useGoogleMaps = (apiKey) => {
+      const [isLoaded, setIsLoaded] = useState(false);
+      useEffect(() => {
+        if (window.google) { setIsLoaded(true); return; }
+        if (!apiKey) return;
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
+        script.async = true; script.defer = true;
+        script.onload = () => setIsLoaded(true);
+        document.head.appendChild(script);
+      }, [apiKey]);
+      return isLoaded;
+    };
+
+    const GoogleMapView = ({ myLocation, companions, isLoaded, meetupPoint, onMapClick, t }) => {
+      const mapRef = useRef(null);
+      const mapInstanceRef = useRef(null);
+      const markersRef = useRef({});
+      const myMarkerRef = useRef(null);
+      const meetupMarkerRef = useRef(null);
+      const circleRef = useRef(null);
+      const defaultLoc = { lat: 21.4225, lng: 39.8262 };
+
+      useEffect(() => {
+        if (isLoaded && mapRef.current && !mapInstanceRef.current && window.google) {
+          mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+            center: myLocation || defaultLoc, zoom: 17, disableDefaultUI: true, zoomControl: true, mapTypeId: 'roadmap'
+          });
+          mapInstanceRef.current.addListener('click', (e) => { 
+              if(onMapClick) onMapClick({ lat: e.latLng.lat(), lng: e.latLng.lng() }); 
+          });
         }
-    }, (err) => console.error(err));
+      }, [isLoaded]);
 
-    const unsubMembers = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `group_${groupId}`), (snap) => {
-      const list = [];
-      snap.forEach(d => { if (d.id !== user.uid) list.push(d.data()); });
-      setCompanions(list);
-    }, (err) => console.error(err));
+      useEffect(() => {
+        if (mapInstanceRef.current && window.google) {
+          const loc = myLocation || defaultLoc;
+          if (!myMarkerRef.current) {
+            myMarkerRef.current = new window.google.maps.Marker({
+              position: loc, map: mapInstanceRef.current,
+              icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#2563eb', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }, zIndex: 1000
+            });
+            mapInstanceRef.current.panTo(loc);
+          } else { myMarkerRef.current.setPosition(loc); }
 
-    return () => { unsubMeta(); unsubMembers(); };
-  }, [user, groupId]);
+          if (circleRef.current) circleRef.current.setMap(null);
+          if (myLocation) {
+              circleRef.current = new window.google.maps.Circle({ strokeColor: "#10b981", strokeOpacity: 0.3, strokeWeight: 1, fillColor: "#10b981", fillOpacity: 0.08, map: mapInstanceRef.current, center: myLocation, radius: 300 });
+          }
+        }
+      }, [myLocation, isLoaded]);
 
+      useEffect(() => {
+          if (mapInstanceRef.current && window.google && meetupPoint) {
+              if (meetupMarkerRef.current) meetupMarkerRef.current.setMap(null);
+              meetupMarkerRef.current = new window.google.maps.Marker({
+                  position: meetupPoint, map: mapInstanceRef.current,
+                  icon: { path: 'M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z', fillColor: '#10b981', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 1, scale: 1.5 }, zIndex: 950
+              });
+          }
+      }, [meetupPoint, isLoaded]);
 
-  // --- Event Handlers ---
-  const handleCreate = async () => {
-    if (!myName.trim() || !createEmergencyPhone.trim()) {
-        showToast("Please fill Name & Emergency Number"); return;
-    }
-    if (!user) return;
-    const code = Math.floor(10000 + Math.random() * 90000).toString();
-    try {
-        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'groups_meta', code), { emergencyPhone: createEmergencyPhone.trim() });
-        setGroupId(code); setActiveTab('home');
-    } catch(e) { showToast("Error creating group"); }
-  };
+      useEffect(() => {
+        if (mapInstanceRef.current && window.google) {
+          companions.forEach(comp => {
+            if (!markersRef.current[comp.id]) {
+              const info = new window.google.maps.InfoWindow({ content: `<div style="color:#000;font-weight:bold;padding:4px;font-size:12px;">${comp.name}</div>`, disableAutoPan:true });
+              const marker = new window.google.maps.Marker({
+                position: { lat: comp.lat, lng: comp.lng }, map: mapInstanceRef.current,
+                icon: { path: window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 6, fillColor: comp.color || '#f59e0b', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }, zIndex: 900
+              });
+              info.open(mapInstanceRef.current, marker);
+              markersRef.current[comp.id] = { marker, info };
+            } else { markersRef.current[comp.id].marker.setPosition({ lat: comp.lat, lng: comp.lng }); }
+          });
+          const ids = companions.map(c => c.id);
+          Object.keys(markersRef.current).forEach(id => {
+            if (!ids.includes(id)) { markersRef.current[id].marker.setMap(null); markersRef.current[id].info.close(); delete markersRef.current[id]; }
+          });
+        }
+      }, [companions, isLoaded]);
 
-  const handleJoin = async () => {
-    if (!myName.trim() || !joinCode.trim()) {
-        showToast("Please fill Name & Code"); return;
-    }
-    if (!user) return;
-    try {
-        const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'groups_meta', joinCode.trim()));
-        if (snap.exists()) { setGroupId(joinCode.trim()); setActiveTab('home'); }
-        else showToast("Invalid Group Code");
-    } catch(e) { showToast("Error joining group"); }
-  };
+      const recenterMap = () => { if (mapInstanceRef.current && myLocation) { mapInstanceRef.current.panTo(myLocation); mapInstanceRef.current.setZoom(17); } };
 
-  const leaveGroup = async () => {
-      if(user && groupId) {
-          try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `group_${groupId}`, user.uid)); } catch(e) {}
-      }
-      setGroupId(''); setCompanions([]); setMeetupPoint(null); setActiveTab('group');
-  };
-
-  const handleMapClickForMeetup = async (point) => {
-      if (!user || !groupId) return;
-      if (window.confirm(t.setMeetup)) {
-          try {
-              await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'groups_meta', groupId), { meetupPoint: point }, { merge: true });
-              showToast(t.meetupSet);
-          } catch(e) { showToast("Error setting meetup point"); }
-      }
-  };
-
-  const triggerSOS = () => {
-      if ('speechSynthesis' in window) {
-          const msg = new SpeechSynthesisUtterance(t.voiceAlertText);
-          msg.lang = lang === 'hi' ? 'hi-IN' : lang === 'ar' ? 'ar-SA' : 'en-US';
-          window.speechSynthesis.speak(msg);
-      }
-      const p = groupEmergencyPhone.replace(/\D/g, ''); 
-      const link = myLocation ? `https://www.google.com/maps/search/?api=1&query=${myLocation.lat},${myLocation.lng}` : '';
-      window.open(`https://wa.me/${p}?text=🚨 EMERGENCY ALERT 🚨\nName: ${myName}\nPhone: ${myPhone}\nLocation: ${link}`, '_blank');
-      setShowModal(false);
-  };
-
-  const showToast = (msg) => {
-      setToastMsg(msg);
-      setTimeout(() => setToastMsg(''), 3000);
-  }
-
-  const copyCode = () => {
-      navigator.clipboard.writeText(groupId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-  }
-
-  const toggleLanguage = () => {
-      if (lang === 'hi') setLang('en');
-      else if (lang === 'en') setLang('ar');
-      else setLang('hi');
-  };
-
-  return (
-    <div className="h-[100dvh] w-full bg-slate-100 flex justify-center font-sans text-slate-800" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="w-full max-w-md flex flex-col h-full bg-white shadow-2xl relative overflow-hidden">
-        
-        {/* Header */}
-        <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between z-10 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="bg-emerald-500 p-2 rounded-xl text-white shadow-md"><Navigation size={20} /></div>
-            <h1 className="text-xl font-black text-slate-800 uppercase tracking-tight">{t.appTitle} <span className="text-emerald-500">{t.appPro}</span></h1>
-          </div>
-          <button onClick={toggleLanguage} className="bg-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5 hover:bg-slate-200 transition-colors">
-              <Languages size={14} className="text-slate-500" /><span className="text-xs font-bold uppercase text-slate-600">{lang}</span>
-          </button>
-        </div>
-
-        {/* Global Toast */}
-        {toastMsg && (
-            <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-xl z-50 flex items-center gap-2 animate-in fade-in slide-in-from-top-4 whitespace-nowrap">
-                <CheckCircle2 size={16} className="text-emerald-400" /> {toastMsg}
+      return (
+        <div className="relative w-full h-[35vh] min-h-[300px] rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div ref={mapRef} className="w-full h-full bg-slate-100 flex items-center justify-center">
+                 {!isLoaded && <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>}
             </div>
-        )}
+            <button onClick={recenterMap} className="absolute right-3 bottom-6 z-20 w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-lg border border-slate-100 hover:bg-slate-50 transition-all active:scale-95">
+              <Crosshair size={24} />
+            </button>
+        </div>
+      );
+    };
 
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
-          
-          {/* GROUP TAB */}
+    function App() {
+      const [user, setUser] = useState(null);
+      const [lang, setLang] = useState('hi');
+      const t = translations[lang];
+      
+      const [activeTab, setActiveTab] = useState('group');
+      const [myLocation, setMyLocation] = useState(null);
+      const [companions, setCompanions] = useState([]);
+      const [groupId, setGroupId] = useState('');
+      const [groupEmergencyPhone, setGroupEmergencyPhone] = useState('');
+      const [meetupPoint, setMeetupPoint] = useState(null);
+      
+      const [myName, setMyName] = useState('');
+      const [myPhone, setMyPhone] = useState('');
+      const [createEmergencyPhone, setCreateEmergencyPhone] = useState('');
+      const [joinCode, setJoinCode] = useState('');
+      const [myColor, setMyColor] = useState('#3b82f6');
+      
+      const [showModal, setShowModal] = useState(false);
+      const [copied, setCopied] = useState(false);
+      const [toastMsg, setToastMsg] = useState('');
+      
+      const isMapLoaded = useGoogleMaps(GOOGLE_MAPS_API_KEY);
+
+      useEffect(() => {
+        if(!isFirebaseConfigured) {
+           showToast("Demo Mode: Firebase database nahi jura hai.");
+           return;
+        }
+        const initAuth = async () => {
+          try { await signInAnonymously(auth); } catch (e) { console.error("Auth err", e); }
+        };
+        initAuth();
+        const unsub = onAuthStateChanged(auth, (u) => {
+            setUser(u);
+            const colors = ['#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+            setMyColor(colors[Math.floor(Math.random() * colors.length)]);
+        });
+        return () => unsub();
+      }, []);
+
+      useEffect(() => {
+        if (!navigator.geolocation) return;
+        const watchId = navigator.geolocation.watchPosition(
+          (p) => setMyLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
+          (err) => { setMyLocation({ lat: 21.4225, lng: 39.8262 }); }, 
+          { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+        );
+        return () => navigator.geolocation.clearWatch(watchId);
+      }, []);
+
+      useEffect(() => {
+        if (!isFirebaseConfigured || !user || !groupId || !myLocation || !myName.trim()) return;
+        const sync = async () => {
+          try {
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `group_${groupId}`, user.uid), {
+                id: user.uid, name: myName.trim(), phone: myPhone.trim(), lat: myLocation.lat, lng: myLocation.lng, color: myColor, lastUpdated: serverTimestamp()
+            }, { merge: true });
+          } catch(e) {}
+        }
+        sync();
+        const interval = setInterval(sync, 4000);
+        return () => clearInterval(interval);
+      }, [user, groupId, myLocation, myName, myPhone, myColor]);
+
+      useEffect(() => {
+        if (!isFirebaseConfigured || !user || !groupId) return;
+        const unsubMeta = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'groups_meta', groupId), (d) => {
+            if(d.exists()) { setGroupEmergencyPhone(d.data().emergencyPhone); if(d.data().meetupPoint) setMeetupPoint(d.data().meetupPoint); }
+        });
+        const unsubMembers = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `group_${groupId}`), (snap) => {
+          const list = []; snap.forEach(d => { if (d.id !== user.uid) list.push(d.data()); }); setCompanions(list);
+        });
+        return () => { unsubMeta(); unsubMembers(); };
+      }, [user, groupId]);
+
+      const handleCreate = async () => {
+        if(!isFirebaseConfigured) return alert("Firebase Data Base code me add karein!");
+        if (!myName.trim() || !createEmergencyPhone.trim()) { showToast("Please fill Name & Emergency Number"); return; }
+        if (!user) return;
+        const code = Math.floor(10000 + Math.random() * 90000).toString();
+        try {
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'groups_meta', code), { emergencyPhone: create
