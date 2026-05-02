@@ -326,4 +326,236 @@
         if (!user) return;
         const code = Math.floor(10000 + Math.random() * 90000).toString();
         try {
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'groups_meta', code), { emergencyPhone: create
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'groups_meta', code), { emergencyPhone: createEmergencyPhone.trim() });
+            setGroupId(code); setActiveTab('home');
+        } catch(e) { showToast("Error creating group"); }
+      };
+
+      const handleJoin = async () => {
+        if(!isFirebaseConfigured) return alert("Firebase Data Base code me add karein!");
+        if (!myName.trim() || !joinCode.trim()) { showToast("Please fill Name & Code"); return; }
+        if (!user) return;
+        try {
+            const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'groups_meta', joinCode.trim()));
+            if (snap.exists()) { setGroupId(joinCode.trim()); setActiveTab('home'); }
+            else showToast("Invalid Group Code");
+        } catch(e) { showToast("Error joining group"); }
+      };
+
+      const leaveGroup = async () => {
+          if(user && groupId) { try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `group_${groupId}`, user.uid)); } catch(e) {} }
+          setGroupId(''); setCompanions([]); setMeetupPoint(null); setActiveTab('group');
+      };
+
+      const handleMapClickForMeetup = async (point) => {
+          if (!user || !groupId) return;
+          if (window.confirm(t.setMeetup)) {
+              try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'groups_meta', groupId), { meetupPoint: point }, { merge: true }); showToast(t.meetupSet); } catch(e) { }
+          }
+      };
+
+      const triggerSOS = () => {
+          if ('speechSynthesis' in window) {
+              const msg = new SpeechSynthesisUtterance(t.voiceAlertText);
+              msg.lang = lang === 'hi' ? 'hi-IN' : lang === 'ar' ? 'ar-SA' : 'en-US';
+              window.speechSynthesis.speak(msg);
+          }
+          const p = groupEmergencyPhone.replace(/\D/g, ''); 
+          const link = myLocation ? `https://www.google.com/maps/search/?api=1&query=${myLocation.lat},${myLocation.lng}` : '';
+          window.open(`https://wa.me/${p}?text=🚨 EMERGENCY ALERT 🚨\nName: ${myName}\nPhone: ${myPhone}\nLocation: ${link}`, '_blank');
+          setShowModal(false);
+      };
+
+      const showToast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 3000); }
+      const copyCode = () => { navigator.clipboard.writeText(groupId); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+      const toggleLanguage = () => { if (lang === 'hi') setLang('en'); else if (lang === 'en') setLang('ar'); else setLang('hi'); };
+
+      return (
+        <div className="h-[100dvh] w-full bg-slate-100 flex justify-center font-sans text-slate-800" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+          <div className="w-full max-w-md flex flex-col h-full bg-white shadow-2xl relative overflow-hidden">
+            
+            <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between z-10 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="bg-emerald-500 p-2 rounded-xl text-white shadow-md"><Navigation size={20} /></div>
+                <h1 className="text-xl font-black text-slate-800 uppercase tracking-tight">{t.appTitle} <span className="text-emerald-500">{t.appPro}</span></h1>
+              </div>
+              <button onClick={toggleLanguage} className="bg-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5 hover:bg-slate-200 transition-colors">
+                  <Languages size={14} className="text-slate-500" /><span className="text-xs font-bold uppercase text-slate-600">{lang}</span>
+              </button>
+            </div>
+
+            {toastMsg && (
+                <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-xl z-50 flex items-center gap-2 animate-in fade-in whitespace-nowrap">
+                    <CheckCircle2 size={16} className="text-emerald-400" /> {toastMsg}
+                </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
+              
+              {activeTab === 'group' && (
+                <div className="space-y-5 animate-in fade-in duration-300">
+                   <div className="bg-slate-50 p-5 rounded-3xl border border-slate-200">
+                      <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"><User size={14}/> {t.yourDetails}</h3>
+                      <input value={myName} onChange={e => setMyName(e.target.value)} placeholder={t.nameHint} className="w-full p-4 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-bold mb-3 shadow-sm bg-white" />
+                      <input value={myPhone} onChange={e => setMyPhone(e.target.value)} placeholder={t.phoneHint} type="tel" className="w-full p-4 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-bold shadow-sm bg-white" />
+                   </div>
+
+                   {!groupId ? (
+                     <div className="space-y-4">
+                        <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100">
+                            <h3 className="font-bold text-emerald-800 text-lg mb-1">{t.createGroup}</h3>
+                            <p className="text-xs text-emerald-600/80 mb-4">{t.createDesc}</p>
+                            <input value={createEmergencyPhone} onChange={e => setCreateEmergencyPhone(e.target.value)} placeholder={t.emergencyHint} type="tel" className="w-full p-4 rounded-xl mb-4 outline-none border border-emerald-200 focus:ring-1 focus:ring-emerald-500 font-bold bg-white shadow-sm" />
+                            <button onClick={handleCreate} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-md transition-colors active:scale-95">{t.createBtn}</button>
+                        </div>
+                        <div className="text-center text-slate-400 font-bold text-xs tracking-widest">— {t.or} —</div>
+                        <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100">
+                            <h3 className="font-bold text-blue-800 text-lg mb-1">{t.joinGroup}</h3>
+                            <p className="text-xs text-blue-600/80 mb-4">{t.joinDesc}</p>
+                            <div className="flex gap-2">
+                                <input value={joinCode} onChange={e => setJoinCode(e.target.value)} placeholder="CODE" type="number" className="flex-1 p-3.5 rounded-xl outline-none border border-blue-200 font-mono font-bold text-center text-xl focus:ring-1 focus:ring-blue-500 bg-white shadow-sm" />
+                                <button onClick={handleJoin} className="bg-blue-600 hover:bg-blue-700 text-white px-6 font-bold rounded-xl shadow-md transition-colors active:scale-95">{t.joinBtn}</button>
+                            </div>
+                        </div>
+                     </div>
+                   ) : (
+                     <div className="bg-emerald-900 p-8 rounded-[2.5rem] text-center text-white shadow-xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/30 rounded-full blur-3xl"></div>
+                        <UsersRound size={56} className="mx-auto mb-4 text-emerald-400" />
+                        <h2 className="text-2xl font-extrabold mb-1">{t.activeGroup}</h2>
+                        <p className="text-sm text-emerald-200/80 mb-6">{t.activeDesc}</p>
+                        <div className="bg-white p-5 rounded-2xl mb-6 shadow-inner flex flex-col items-center text-slate-800">
+                            <p className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-1">{t.groupCode}</p>
+                            <div className="flex items-center gap-3">
+                               <span className="text-4xl font-mono font-black text-slate-800">{groupId}</span>
+                               <button onClick={copyCode} className={`p-2 rounded-lg transition-colors ${copied ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Copy size={20}/></button>
+                            </div>
+                        </div>
+                        <button onClick={leaveGroup} className="w-full bg-white/10 text-white font-bold py-4 rounded-xl hover:bg-white/20 transition-colors">{t.leaveBtn}</button>
+                     </div>
+                   )}
+                </div>
+              )}
+
+              {activeTab === 'home' && (
+                <div className="space-y-5 animate-in fade-in duration-300">
+                   {!groupId && (
+                      <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl flex items-start gap-3 shadow-sm">
+                         <AlertTriangle size={24} className="shrink-0 text-amber-500 mt-0.5" />
+                         <div>
+                            <p className="font-bold mb-1 text-amber-800">{t.offlineTitle}</p>
+                            <p className="text-amber-700/80 text-xs mb-3 leading-relaxed">{t.offlineDesc}</p>
+                            <button onClick={() => setActiveTab('group')} className="bg-amber-200 px-4 py-2 rounded-lg text-amber-900 font-bold text-xs">{t.goGroupBtn}</button>
+                         </div>
+                      </div>
+                   )}
+                   <div className="relative">
+                    <GoogleMapView myLocation={myLocation} companions={companions} isLoaded={isMapLoaded} meetupPoint={meetupPoint} onMapClick={handleMapClickForMeetup} t={t} />
+                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm text-slate-700">
+                       {t.group}: {groupId || '---'}
+                    </div>
+                    {groupId && !meetupPoint && (
+                       <div className="absolute bottom-3 left-3 right-16 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] p-2 rounded-lg text-center shadow-md animate-pulse">
+                          {t.meetupTip}
+                       </div>
+                    )}
+                   </div>
+                   <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200">
+                      <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4"><Compass size={14} className="text-blue-500"/> {t.directions}</h3>
+                      <div className="space-y-3">
+                          {companions.length === 0 ? <p className="text-center py-6 bg-slate-50 rounded-2xl text-xs text-slate-400 font-medium">{t.noMembers}</p> : 
+                            companions.map(c => {
+                              const dist = myLocation ? getDistanceFromLatLonInKm(myLocation.lat, myLocation.lng, c.lat, c.lng) : 0;
+                              const bearing = myLocation ? getBearing(myLocation.lat, myLocation.lng, c.lat, c.lng) : 0;
+                              const isFar = (dist * 1000) > 300; 
+
+                              return (
+                                <div key={c.id} className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${isFar ? 'bg-red-50 border-red-200 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-slate-50 border-slate-100'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-inner border border-white/20 shrink-0" style={{ backgroundColor: c.color || '#3b82f6' }}>{c.name.charAt(0)}</div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-800 line-clamp-1">{c.name}</h4>
+                                            <p className={`text-[11px] font-bold mt-1 inline-block px-2 py-0.5 rounded ${isFar ? 'text-red-600 bg-red-100' : 'text-emerald-700 bg-emerald-100'}`}>
+                                               {t.doori}: {dist < 1 ? `${(dist*1000).toFixed(0)}m` : `${dist.toFixed(1)}km`} 
+                                               {isFar && <span className="ml-1 uppercase animate-pulse">— {t.outOfRange}</span>}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-1.5 min-w-[40px]">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">N ↑</span>
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm transition-transform duration-500 shrink-0 ${isFar ? 'bg-red-500' : 'bg-slate-800'}`} style={{ transform: `rotate(${bearing}deg)` }}>
+                                            <Navigation size={18} className="text-white fill-white" />
+                                        </div>
+                                    </div>
+                                </div>
+                              );
+                            })
+                          }
+                      </div>
+                   </div>
+                </div>
+              )}
+
+              {activeTab === 'sos' && (
+                <div className="pt-8 flex flex-col items-center text-center space-y-6 animate-in zoom-in-95">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-red-500 rounded-full blur-3xl opacity-20 animate-pulse"></div>
+                        <div className="relative w-40 h-40 bg-white border-[8px] border-red-50 rounded-full flex items-center justify-center shadow-xl shadow-red-500/10">
+                            <ShieldAlert size={64} className="text-red-500" />
+                        </div>
+                    </div>
+                    <div className="px-4">
+                        <h2 className="text-3xl font-black text-slate-800 mb-3 uppercase tracking-tight">{t.sosTitle}</h2>
+                        <p className="text-slate-500 text-sm leading-relaxed mb-6 px-2">{t.sosDesc}</p>
+                        <div className="bg-white p-4 rounded-2xl border border-slate-200 inline-flex flex-col items-center shadow-sm w-full max-w-[260px]">
+                           <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">{t.adminNo}</span>
+                           <span className="text-red-600 font-mono font-bold text-xl">{groupEmergencyPhone || "---"}</span>
+                        </div>
+                    </div>
+                    <button 
+                       onClick={() => setShowModal(true)} disabled={!groupEmergencyPhone} 
+                       className="w-full max-w-[280px] bg-red-600 text-white font-black text-2xl py-5 rounded-3xl shadow-[0_8px_0_rgb(153,27,27)] active:translate-y-2 active:shadow-none transition-all disabled:opacity-50 disabled:shadow-none"
+                    >
+                      {t.sosBtn}
+                    </button>
+                </div>
+              )}
+            </div>
+
+            <div className="absolute bottom-6 left-6 right-6 z-40">
+               <div className="bg-white/90 backdrop-blur-2xl border border-slate-200 p-2 rounded-[2rem] flex justify-around shadow-[0_15px_40px_rgba(0,0,0,0.08)]">
+                  {[ { id: 'group', icon: UsersRound, label: t.group }, { id: 'home', icon: MapPin, label: t.map }, { id: 'sos', icon: ShieldAlert, label: t.sos } ].map(tab => (
+                      <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center p-3 rounded-2xl transition-all ${activeTab === tab.id ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200 scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
+                          <tab.icon size={22} className={activeTab === tab.id ? 'stroke-[2.5px]' : ''} />
+                          <span className="text-[10px] font-bold mt-1 uppercase tracking-wider">{tab.label}</span>
+                      </button>
+                  ))}
+               </div>
+            </div>
+
+            {showModal && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+                 <div className="bg-white rounded-[2rem] p-8 w-full max-w-[340px] text-center shadow-2xl scale-in-center">
+                    <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Volume2 size={40} className="text-red-500 animate-pulse" />
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-800 mb-2">{t.confirmSOS}</h3>
+                    <p className="text-slate-500 text-sm mb-8">{t.confirmDesc}</p>
+                    <div className="space-y-3">
+                        <button onClick={triggerSOS} className="w-full bg-red-600 text-white font-bold text-lg py-4 rounded-xl shadow-md shadow-red-200 active:scale-95 transition-transform">{t.yesSOS}</button>
+                        <button onClick={() => setShowModal(false)} className="w-full bg-slate-100 text-slate-600 font-bold text-lg py-4 rounded-xl active:scale-95 transition-transform">{t.cancel}</button>
+                    </div>
+                 </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
