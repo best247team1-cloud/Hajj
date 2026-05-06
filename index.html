@@ -2,38 +2,37 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Saathi VIP - Hajj & Umrah Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Umrah Tracker - Live GPS</title>
   
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- Babel Compiler -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    body { -webkit-tap-highlight-color: transparent; background-color: #f8fafc; }
-    .dir-rtl { direction: rtl; }
-    .dir-ltr { direction: ltr; }
+    body { -webkit-tap-highlight-color: transparent; background-color: #f1f5f9; overscroll-behavior-y: none; }
     ::-webkit-scrollbar { width: 0px; background: transparent; }
-    .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+    .chat-scroll::-webkit-scrollbar { width: 4px; }
+    .chat-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding-bottom: env(safe-area-inset-bottom); }
+    .msg-receive { border-top-left-radius: 2px !important; }
+    .msg-send { border-top-right-radius: 2px !important; background-color: #e7fbd3; }
+    .drawer-overlay { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
   </style>
 </head>
-<body class="overflow-hidden">
-  <div id="root"></div>
+<body class="overflow-hidden w-full h-[100dvh]">
+  <div id="root" class="w-full h-full"></div>
 
   <script type="text/babel" data-type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp, query, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const { useState, useEffect, useRef } = React;
 
     // ============================================================================
+    // API KEYS
     const GOOGLE_MAPS_API_KEY = "AIzaSyC_uP3i3qFk31xZfY6br09DI-LjA60aC_c"; 
 
     const firebaseConfig = {
@@ -42,8 +41,7 @@
       projectId: "sathi-app-5734b",
       storageBucket: "sathi-app-5734b.firebasestorage.app",
       messagingSenderId: "115098030156",
-      appId: "1:115098030156:web:d7b5357f1adc71d34424e9",
-      measurementId: "G-91901XPPQ5"
+      appId: "1:115098030156:web:d7b5357f1adc71d34424e9"
     };
     // ============================================================================
 
@@ -68,21 +66,110 @@
     const UserMinus = (p) => <SvgIcon paths='<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" x2="17" y1="11" y2="11"/>' {...p}/>;
     const PhoneCall = (p) => <SvgIcon paths='<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/><path d="M14.05 2a9 9 0 0 1 8 7.94"/><path d="M14.05 6A5 5 0 0 1 18 10"/>' {...p}/>;
     const MessageCircle = (p) => <SvgIcon paths='<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>' {...p}/>;
+    const Send = (p) => <SvgIcon paths='<line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>' {...p}/>;
     const FlagOff = (p) => <SvgIcon paths='<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>' {...p}/>;
     const Flag = (p) => <SvgIcon paths='<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>' {...p}/>;
     const Route = (p) => <SvgIcon paths='<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>' {...p}/>;
     const Layers = (p) => <SvgIcon paths='<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>' {...p}/>;
+    const Languages = (p) => <SvgIcon paths='<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>' {...p}/>;
+    const Heart = (p) => <SvgIcon paths='<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>' {...p}/>;
+    const Info = (p) => <SvgIcon paths='<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>' {...p}/>;
+    const MenuIcon = (p) => <SvgIcon paths='<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>' {...p}/>;
+    const XIcon = (p) => <SvgIcon paths='<line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/>' {...p}/>;
+    const FileText = (p) => <SvgIcon paths='<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/>' {...p}/>;
+    const ShieldCheck = (p) => <SvgIcon paths='<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/>' {...p}/>;
 
-    // --- Math Utils ---
+    // --- Translations (Hindi, English, Urdu) ---
+    const translations = {
+      hi: {
+        appTitle: "Umrah", appPro: "Tracker", group: "Group", map: "Map", chat: "Chat", sos: "SOS",
+        yourDetails: "Aapki Details", nameHint: "Aapka Pura Naam", phoneHint: "Mobile No.",
+        createGroup: "Group Banayein", createDesc: "Emergency WhatsApp number set karein.",
+        emergencyHint: "Admin WhatsApp No.", createBtn: "Create Karein",
+        or: "YA", joinGroup: "Group Join Karein", joinDesc: "Admin ka diya 5-digit code dalein.",
+        joinBtn: "Join", activeGroup: "Group Active Hai", activeDesc: "Naye saathiyon ko add karne ke liye Code bhejein.",
+        groupCode: "Group Code", leaveBtn: "Group Chhodein",
+        offlineTitle: "Aap Offline Hain", offlineDesc: "Map par dusron ko dekhne ke liye Group banayein ya Join karein.",
+        goGroupBtn: "Group Me Jayein", directions: "Disha & ETA", outOfRange: "Door Hai!", doori: "Doori",
+        sosTitle: "Emergency SOS", sosDesc: "Bheed me kho jane par dabayein. Admin ko Call ya Location jayegi.",
+        adminNo: "Admin No.", sosBtn: "HELP ME!", meetupAlert: "🚩 Aap Meetup Point par pahunch gaye hain!",
+        adminTip: "Admin Tip: Map par click karke Custom Flag lagayein.", noMessages: "Koi message nahi hai. Pehla message bhejein!",
+        typeMessage: "Message likhein...", route: "Raasta", meetupPoint: "Milne ki Jagah",
+        supportTitle: "Support Karein", supportDesc: "Agar aapko yeh app pasand aayi toh developer ko support karein.", copyUpi: "UPI ID Copy Karein",
+        settings: "Settings", aboutTitle: "हमारे बारे में (About Us)", termsTitle: "नियम और शर्तें (Terms)", privacyTitle: "प्राइवेसी पॉलिसी (Privacy)",
+        aboutDesc: "Umrah Tracker ek muft app hai jo Hajj aur Umrah ke dauran haajiyon ki suraksha aur unhe aapas me jode rakhne ke liye banayi gayi hai. Iska maqsad bheed me apno ko gum hone se bachana hai.",
+        termsDesc: "Is app ka upyog karke, aap apni live location apne group ke sath share karne ke liye sahmat hain. Developer kisi bhi network issue, GPS ki galti, ya kisi nuksaan ke liye zimmewar nahi hai. Yeh app official emergency services ka badal nahi hai.",
+        privacyDesc: "Umrah Tracker aapka Naam, Phone Number aur Live GPS Location collect karta hai. Yeh data SIRF aapke private group members ko dikhaya jata hai aur kisi third-party ko nahi becha jata. Jab aap 'Group Chhodein' dabate hain, toh aapka sara data hamare server se turant permanently delete ho jata hai.",
+        consentTitle: "स्थान (Location) की अनुमति आवश्यक है",
+        consentMsg: "Umrah Tracker aapke 'Live Location' data ko collect karta hai taaki aapke Hajj aur Umrah group ke members aapko Map par real-time me dekh sakein. Yeh aapki suraksha aur bheed me ek dusre ko dhoondhne ke liye zaroori hai. Kya aap iski anumati (permission) dete hain?",
+        agree: "Main Sahmat Hu (I Agree)"
+      },
+      en: {
+        appTitle: "Umrah", appPro: "Tracker", group: "Group", map: "Map", chat: "Chat", sos: "SOS",
+        yourDetails: "Your Details", nameHint: "Your Full Name", phoneHint: "Mobile No.",
+        createGroup: "Create Group", createDesc: "Set emergency WhatsApp number.",
+        emergencyHint: "Admin WhatsApp No.", createBtn: "Create",
+        or: "OR", joinGroup: "Join Group", joinDesc: "Enter 5-digit code from Admin.",
+        joinBtn: "Join", activeGroup: "Group is Active", activeDesc: "Share this code to add more members.",
+        groupCode: "Group Code", leaveBtn: "Leave Group",
+        offlineTitle: "You are Offline", offlineDesc: "Create or join a group to see others on the map.",
+        goGroupBtn: "Go to Group", directions: "Directions & ETA", outOfRange: "Too Far!", doori: "Distance",
+        sosTitle: "Emergency SOS", sosDesc: "Press if lost. It will send your location or call Admin.",
+        adminNo: "Admin No.", sosBtn: "HELP ME!", meetupAlert: "🚩 You have arrived at the Meetup Point!",
+        adminTip: "Admin Tip: Click on map to set a Custom Flag.", noMessages: "No messages yet. Send the first one!",
+        typeMessage: "Type a message...", route: "Route", meetupPoint: "Meetup Point",
+        supportTitle: "Support Us", supportDesc: "If you found this app helpful, consider supporting the developer.", copyUpi: "Copy UPI ID",
+        settings: "Settings", aboutTitle: "About Us", termsTitle: "Terms & Conditions", privacyTitle: "Privacy Policy",
+        aboutDesc: "Umrah Tracker is a free application designed to ensure the safety and connectivity of pilgrims during Hajj and Umrah. Our mission is to prevent people from getting lost in crowded holy sites.",
+        termsDesc: "By using this app, you agree to share your location with your private group. The developer is not liable for network failures, GPS inaccuracies, or any damages. This app is not a replacement for official emergency services.",
+        privacyDesc: "Umrah Tracker collects your Name, Phone Number, and Live GPS Location. This data is shared STRICTLY with your private group members to enable real-time tracking. We do not sell your data. When you click 'Leave Group', all your data is permanently deleted from our servers.",
+        consentTitle: "Location Permission Required",
+        consentMsg: "Umrah Tracker collects location data to enable real-time tracking on the map with your Hajj/Umrah group members, even when the app is closed or not in use (background tracking), to ensure your safety in crowded places. Do you agree to share your location?",
+        agree: "I Agree"
+      },
+      ur: {
+        appTitle: "عمرہ", appPro: "ٹریکر", group: "گروپ", map: "نقشہ", chat: "چیٹ", sos: "مدد",
+        yourDetails: "آپ کی تفصیلات", nameHint: "آپ کا پورا نام", phoneHint: "موبائل نمبر",
+        createGroup: "نیا گروپ بنائیں", createDesc: "ایمرجنسی واٹس ایپ نمبر سیٹ کریں۔",
+        emergencyHint: "ایڈمن واٹس ایپ نمبر", createBtn: "گروپ بنائیں",
+        or: "یا", joinGroup: "گروپ جوائن کریں", joinDesc: "ایڈمن کا دیا ہوا 5 ہندسوں کا کوڈ ڈالیں۔",
+        joinBtn: "شامل ہوں", activeGroup: "گروپ ایکٹو ہے", activeDesc: "نئے ساتھیوں کو شامل کرنے کے لیے یہ کوڈ بھیجیں۔",
+        groupCode: "گروپ کوڈ", leaveBtn: "گروپ چھوڑیں",
+        offlineTitle: "آپ آف لائن ہیں", offlineDesc: "نقشے پر دوسروں کو دیکھنے کے لیے گروپ بنائیں یا شامل ہوں۔",
+        goGroupBtn: "گروپ میں جائیں", directions: "سمت اور فاصلہ", outOfRange: "دور ہے!", doori: "فاصلہ",
+        sosTitle: "ایمرجنسی SOS", sosDesc: "بھیڑ میں گم ہونے پر دبائیں۔ ایڈمن کو کال یا لوکیشن جائے گی۔",
+        adminNo: "ایڈمن نمبر", sosBtn: "مدد کے لیے کال کریں!", meetupAlert: "🚩 آپ ملنے کی جگہ پر پہنچ گئے ہیں!",
+        adminTip: "ایڈمن ٹپ: نقشے پر کلک کر کے کسٹم فلیگ (جھنڈا) لگائیں۔", noMessages: "کوئی میسج نہیں ہے۔ پہلا پیغام بھیجیں!",
+        typeMessage: "میسج لکھیں...", route: "راستہ", meetupPoint: "ملنے کی جگہ",
+        supportTitle: "سپورٹ کریں", supportDesc: "اگر آپ کو یہ ایپ پسند آئی تو ڈویلپر کی مدد کریں۔", copyUpi: "UPI ID کاپی کریں",
+        settings: "ترتیبات", aboutTitle: "ہمارے بارے میں", termsTitle: "شرائط و ضوابط", privacyTitle: "پرائیویسی پالیسی",
+        aboutDesc: "عمرہ ٹریکر ایک مفت ایپ ہے جسے حج اور عمرہ کے دوران حجاج کی حفاظت اور آپس میں جوڑے رکھنے کے لیے بنایا گیا ہے۔ اس کا مقصد بھیڑ میں اپنوں کو گم ہونے سے بچانا ہے۔",
+        termsDesc: "اس ایپ کا استعمال کر کے، آپ اپنی لوکیشن اپنے گروپ کے ساتھ شیئر کرنے کے لیے متفق ہیں۔ ڈویلپر کسی بھی نیٹ ورک کے مسئلے، GPS کی غلطی، یا کسی نقصان کا ذمہ دار نہیں ہے۔",
+        privacyDesc: "عمرہ ٹریکر آپ کا نام، فون نمبر اور لائیو جی پی ایس لوکیشن اکٹھا کرتا ہے۔ یہ ڈیٹا صرف آپ کے پرائیویٹ گروپ کے ممبرز کو دکھایا جاتا ہے۔ جب آپ 'گروپ چھوڑیں' دباتے ہیں تو آپ کا سارا ڈیٹا ہمارے سرور سے فوراً ڈیلیٹ ہو جاتا ہے۔",
+        consentTitle: "لوکیشن کی اجازت درکار ہے",
+        consentMsg: "عمرہ ٹریکر آپ کی لائیو لوکیشن کا ڈیٹا اکٹھا کرتا ہے تاکہ آپ کے حج اور عمرہ گروپ کے ممبرز آپ کو نقشے پر ریئل ٹائم میں دیکھ سکیں۔ یہ آپ کی حفاظت اور بھیڑ میں ایک دوسرے کو تلاش کرنے کے لیے ضروری ہے۔ کیا آپ اس کی اجازت دیتے ہیں؟",
+        agree: "میں متفق ہوں (I Agree)"
+      }
+    };
+
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+      if(!lat1 || !lon1 || !lat2 || !lon2) return 0;
       const R = 6371; const dLat = (lat2 - lat1) * (Math.PI / 180); const dLon = (lon2 - lon1) * (Math.PI / 180);
       const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
       return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
     function getBearing(lat1, lon1, lat2, lon2) {
+      if(!lat1 || !lon1 || !lat2 || !lon2) return 0;
       const y = Math.sin((lon2 - lon1) * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180));
       const x = Math.cos(lat1 * (Math.PI / 180)) * Math.sin(lat2 * (Math.PI / 180)) - Math.sin(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.cos((lon2 - lon1) * (Math.PI / 180));
       return (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+    }
+    function calculateETA(distanceInKm) {
+        if(distanceInKm === 0) return "--";
+        const minutes = Math.ceil((distanceInKm * 1000) / 80); 
+        if(minutes < 1) return "0 min";
+        if(minutes > 60) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+        return `${minutes} min`;
     }
 
     const useGoogleMaps = (apiKey) => {
@@ -99,24 +186,19 @@
       return isLoaded;
     };
 
-    // =========================================================
-    // MAP COMPONENT
-    // =========================================================
-    const GoogleMapView = ({ myLocation, companions, isLoaded, meetupPoint, meetupLabel, onMapClick, mapType, focusCoords }) => {
+    const GoogleMapView = ({ myLocation, companions, isLoaded, meetupPoint, meetupLabel, onMapClick, mapType, focusCoords, isUrdu }) => {
       const mapRef = useRef(null);
       const mapInstanceRef = useRef(null);
       const markersRef = useRef({});
       const myMarkerRef = useRef(null);
-      const myInfoRef = useRef(null);
       const meetupMarkerRef = useRef(null);
       const meetupInfoRef = useRef(null);
-      const circleRef = useRef(null);
       const defaultLoc = { lat: 21.4225, lng: 39.8262 };
 
       useEffect(() => {
         if (isLoaded && mapRef.current && !mapInstanceRef.current && window.google) {
           mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
-            center: myLocation || defaultLoc, zoom: 17, disableDefaultUI: true, zoomControl: false, mapTypeId: mapType || 'roadmap'
+            center: myLocation || defaultLoc, zoom: 17, disableDefaultUI: true, mapTypeId: mapType || 'roadmap', gestureHandling: 'greedy'
           });
           mapInstanceRef.current.addListener('click', (e) => { 
               if(onMapClick) onMapClick({ lat: e.latLng.lat(), lng: e.latLng.lng() }); 
@@ -124,9 +206,7 @@
         }
       }, [isLoaded]);
 
-      useEffect(() => {
-          if(mapInstanceRef.current && isLoaded) mapInstanceRef.current.setMapTypeId(mapType);
-      }, [mapType, isLoaded]);
+      useEffect(() => { if(mapInstanceRef.current && isLoaded) mapInstanceRef.current.setMapTypeId(mapType); }, [mapType, isLoaded]);
 
       useEffect(() => {
           if(mapInstanceRef.current && isLoaded && focusCoords) {
@@ -143,18 +223,10 @@
               position: loc, map: mapInstanceRef.current,
               icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#3b82f6', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 3 }, zIndex: 1000
             });
-            myInfoRef.current = new window.google.maps.InfoWindow({
-                content: `<div style="font-weight:800;color:#2563eb;padding:3px;font-size:13px;font-family:sans-serif;">Aap Yahan Hain (Me)</div>`, disableAutoPan: true
-            });
-            myInfoRef.current.open(mapInstanceRef.current, myMarkerRef.current);
+            const myInfo = new window.google.maps.InfoWindow({ content: `<div style="font-weight:800;color:#2563eb;padding:3px;font-size:13px;font-family:sans-serif;">You (Me)</div>`, disableAutoPan: true });
+            myMarkerRef.current.addListener('click', () => myInfo.open(mapInstanceRef.current, myMarkerRef.current));
             mapInstanceRef.current.panTo(loc);
-          } else { 
-              myMarkerRef.current.setPosition(loc); 
-          }
-          if (circleRef.current) circleRef.current.setMap(null);
-          if (myLocation) {
-              circleRef.current = new window.google.maps.Circle({ strokeColor: "#10b981", strokeOpacity: 0.4, strokeWeight: 2, fillColor: "#10b981", fillOpacity: 0.1, map: mapInstanceRef.current, center: myLocation, radius: 300 });
-          }
+          } else { myMarkerRef.current.setPosition(loc); }
         }
       }, [myLocation, isLoaded]);
 
@@ -168,9 +240,8 @@
                       icon: { path: 'M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z', fillColor: '#ef4444', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2, scale: 1.6 }, zIndex: 950
                   });
                   if(meetupLabel){
-                      meetupInfoRef.current = new window.google.maps.InfoWindow({
-                          content: `<div style="font-weight:900;color:#b91c1c;padding:3px 6px;font-size:15px;font-family:sans-serif;">🚩 ${meetupLabel}</div>`, disableAutoPan: true
-                      });
+                      meetupInfoRef.current = new window.google.maps.InfoWindow({ content: `<div style="font-weight:900;color:#b91c1c;padding:3px 6px;font-size:15px;font-family:sans-serif;">🚩 ${meetupLabel}</div>`, disableAutoPan: true });
+                      meetupMarkerRef.current.addListener('click', () => meetupInfoRef.current.open(mapInstanceRef.current, meetupMarkerRef.current));
                       meetupInfoRef.current.open(mapInstanceRef.current, meetupMarkerRef.current);
                   }
               }
@@ -181,11 +252,12 @@
         if (mapInstanceRef.current && window.google) {
           companions.forEach(comp => {
             if (!markersRef.current[comp.id]) {
-              const info = new window.google.maps.InfoWindow({ content: `<div style="color:#000;font-weight:bold;padding:4px;font-size:13px;font-family:sans-serif;">${comp.name}</div>`, disableAutoPan:true });
+              const info = new window.google.maps.InfoWindow({ content: `<div style="color:#000;padding:4px;font-family:sans-serif;text-align:center;"><div style="font-weight:900;font-size:14px;">${comp.name}</div></div>`, disableAutoPan:true });
               const marker = new window.google.maps.Marker({
                 position: { lat: comp.lat, lng: comp.lng }, map: mapInstanceRef.current,
                 icon: { path: window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 7, fillColor: comp.color || '#f59e0b', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }, zIndex: 900
               });
+              marker.addListener('click', () => { mapInstanceRef.current.panTo({ lat: comp.lat, lng: comp.lng }); info.open(mapInstanceRef.current, marker); });
               info.open(mapInstanceRef.current, marker);
               markersRef.current[comp.id] = { marker, info };
             } else { markersRef.current[comp.id].marker.setPosition({ lat: comp.lat, lng: comp.lng }); }
@@ -204,10 +276,16 @@
       );
     };
 
-    // =========================================================
-    // MAIN APP COMPONENT
-    // =========================================================
     function App() {
+      // Play Store Mandatory Consent Check
+      const [hasConsent, setHasConsent] = useState(() => {
+          return localStorage.getItem('umrah_location_consent') === 'true';
+      });
+
+      const [lang, setLang] = useState('hi');
+      const t = translations[lang];
+      const isUrdu = lang === 'ur';
+
       const [user, setUser] = useState(null);
       const [activeTab, setActiveTab] = useState('group');
       const [myLocation, setMyLocation] = useState(null);
@@ -225,52 +303,74 @@
       const [mapType, setMapType] = useState('roadmap');
       const [focusCoords, setFocusCoords] = useState(null);
       
-      const [showModal, setShowModal] = useState(false);
+      const [messages, setMessages] = useState([]);
+      const [newMessage, setNewMessage] = useState('');
+      const [unreadCount, setUnreadCount] = useState(0);
+      const chatEndRef = useRef(null);
+      
+      const [showSOSModal, setShowSOSModal] = useState(false);
+      const [showSupportModal, setShowSupportModal] = useState(false);
+      const [isMenuOpen, setIsMenuOpen] = useState(false);
+      const [legalContent, setLegalContent] = useState(null); // 'privacy', 'terms', 'about'
+
       const [copied, setCopied] = useState(false);
       const [toastMsg, setToastMsg] = useState('');
       
       const isMapLoaded = useGoogleMaps(GOOGLE_MAPS_API_KEY);
       const prevCompanionsRef = useRef([]);
+      const arrivedAlertSent = useRef(false);
 
       const isAdmin = user && groupMeta && user.uid === groupMeta.creatorId;
 
+      const acceptConsent = () => {
+          localStorage.setItem('umrah_location_consent', 'true');
+          setHasConsent(true);
+      };
+
       useEffect(() => {
-        const initAuth = async () => {
-          try { await signInAnonymously(auth); } catch (e) { console.error("Auth err", e); }
-        };
+        if(!hasConsent) return; // Do not initialize auth or GPS until consent is given
+
+        const initAuth = async () => { try { await signInAnonymously(auth); } catch (e) {} };
         initAuth();
         const unsub = onAuthStateChanged(auth, (u) => {
             setUser(u);
-            const colors = ['#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+            const colors = ['#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#eab308'];
             setMyColor(colors[Math.floor(Math.random() * colors.length)]);
         });
         return () => unsub();
-      }, []);
+      }, [hasConsent]);
 
-      // Proper GPS Fetching Logic
       useEffect(() => {
-        if (!navigator.geolocation) {
-            showToast("Aapke browser me GPS support nahi karta.");
-            return;
-        }
-        
+        if (!navigator.geolocation || !hasConsent) return;
         const watchId = navigator.geolocation.watchPosition(
           (p) => setMyLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
-          (err) => { 
-              console.warn(err);
-              if (err.code === 1) showToast("Bhai, Location Permission ON karo tabhi Map chalega!");
-              else showToast("GPS signal nahi mil raha. Khuli jagah me aao.");
-              setMyLocation({ lat: 21.4225, lng: 39.8262 }); // Keep fallback so map renders, but warn user.
-          }, 
+          (err) => { setMyLocation({ lat: 21.4225, lng: 39.8262 }); }, 
           { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
         );
         return () => navigator.geolocation.clearWatch(watchId);
-      }, []);
+      }, [hasConsent]);
+
+      useEffect(() => {
+          if (myLocation && groupMeta?.meetupPoint) {
+              const distInKm = getDistanceFromLatLonInKm(myLocation.lat, myLocation.lng, groupMeta.meetupPoint.lat, groupMeta.meetupPoint.lng);
+              if (distInKm < 0.05) { 
+                  if (!arrivedAlertSent.current) {
+                      showToast(t.meetupAlert);
+                      try {
+                          if ('speechSynthesis' in window) {
+                              const msg = new SpeechSynthesisUtterance(t.meetupAlert);
+                              msg.lang = isUrdu ? 'ur-PK' : 'hi-IN'; window.speechSynthesis.speak(msg);
+                          }
+                      } catch(e){}
+                      arrivedAlertSent.current = true;
+                  }
+              } else if (distInKm > 0.1) arrivedAlertSent.current = false; 
+          }
+      }, [myLocation, groupMeta?.meetupPoint, lang]);
 
       useEffect(() => {
           if(!user || !groupId || !groupMeta) return;
           if(groupMeta.banned && groupMeta.banned.includes(user.uid)) {
-              showToast("Admin ne aapko group se nikal diya hai.");
               setGroupId(''); setGroupMeta(null); setCompanions([]); setActiveTab('group');
           }
       }, [groupMeta, user, groupId]);
@@ -278,7 +378,6 @@
       useEffect(() => {
         if (!user || !groupId || !myLocation || !myName.trim()) return;
         if(groupMeta && groupMeta.banned && groupMeta.banned.includes(user.uid)) return;
-
         const sync = async () => {
           try {
             await setDoc(doc(db, 'hajj_groups', groupId, 'members', user.uid), {
@@ -293,276 +392,268 @@
 
       useEffect(() => {
         if (!user || !groupId) return;
-        const unsubMeta = onSnapshot(doc(db, 'hajj_groups', groupId), (d) => {
-            if(d.exists()) setGroupMeta(d.data());
-        });
+        const unsubMeta = onSnapshot(doc(db, 'hajj_groups', groupId), (d) => { if(d.exists()) setGroupMeta(d.data()); });
         const unsubMembers = onSnapshot(collection(db, 'hajj_groups', groupId, 'members'), (snap) => {
-          const list = []; 
-          snap.forEach(d => { if (d.id !== user.uid) list.push(d.data()); }); 
-          
-          if(isAdmin && list.length > prevCompanionsRef.current.length && prevCompanionsRef.current.length > 0) {
-              const newMembers = list.filter(m => !prevCompanionsRef.current.find(p => p.id === m.id));
-              if(newMembers.length > 0) showToast(`🎉 ${newMembers[0].name} ne group Join kiya!`);
-          }
+          const list = []; snap.forEach(d => { if (d.id !== user.uid) list.push(d.data()); }); 
           prevCompanionsRef.current = list;
           setCompanions(list);
         });
-        return () => { unsubMeta(); unsubMembers(); };
-      }, [user, groupId, isAdmin]);
+
+        const q = query(collection(db, 'hajj_groups', groupId, 'messages'), orderBy('timestamp', 'asc'));
+        const unsubMsgs = onSnapshot(q, (snap) => {
+            const msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
+            setMessages(prev => {
+                if(msgs.length > prev.length && activeTab !== 'chat' && msgs.length > 0) {
+                    const lastMsg = msgs[msgs.length - 1];
+                    if(lastMsg.senderId !== user.uid) setUnreadCount(c => c + 1);
+                }
+                return msgs;
+            });
+            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        });
+        return () => { unsubMeta(); unsubMembers(); unsubMsgs(); };
+      }, [user, groupId, activeTab]);
+
+      useEffect(() => { if(activeTab === 'chat') setUnreadCount(0); }, [activeTab]);
 
       const handleCreate = async () => {
-        if (!myName.trim() || !createEmergencyPhone.trim()) { showToast("Name & Emergency Number zaroori hai"); return; }
-        if (!user) { showToast("Connecting... Wait"); return; }
+        if (!myName.trim() || !createEmergencyPhone.trim()) return;
+        if (!user) return;
         const code = Math.floor(10000 + Math.random() * 90000).toString();
         try {
-            await setDoc(doc(db, 'hajj_groups', code), { 
-                emergencyPhone: createEmergencyPhone.trim(), creatorId: user.uid, creatorName: myName.trim(), banned: []
-            });
+            await setDoc(doc(db, 'hajj_groups', code), { emergencyPhone: createEmergencyPhone.trim(), creatorId: user.uid, creatorName: myName.trim(), banned: [] });
             setGroupId(code); setActiveTab('home');
-        } catch(e) { showToast("Database Rules lock hain!"); }
+        } catch(e) {}
+      };
+
+      const handleJoin = async () => {
+        if (!myName.trim() || !joinCode.trim() || !user) return;
+        try {
+            const snap = await getDoc(doc(db, 'hajj_groups', joinCode.trim()));
+            if (snap.exists()) { 
+                const data = snap.data();
+                if(data.banned && data.banned.includes(user.uid)) return;
+                setGroupId(joinCode.trim()); setActiveTab('home'); 
+            } else showToast(t.invalidCode || "Invalid Code");
+        } catch(e) {}
       };
 
       const handleRemoveUser = async (uid, name) => {
           if(!isAdmin) return;
-          if(window.confirm(`Kya aap sach me ${name} ko group se nikalna chahte hain?`)) {
+          if(window.confirm(`Remove ${name}?`)) {
               try {
                   await deleteDoc(doc(db, 'hajj_groups', groupId, 'members', uid));
                   const currentBanned = groupMeta.banned || [];
                   await setDoc(doc(db, 'hajj_groups', groupId), { banned: [...currentBanned, uid] }, {merge: true});
-                  showToast(`${name} ko Remove kar diya gaya.`);
-              } catch(e) { showToast("Remove karne me error aaya."); }
+              } catch(e) {}
           }
       };
 
       const handleMapClickForMeetup = async (point) => {
           if (!isAdmin || !groupId) return;
-          const label = window.prompt("Map Jhande (Flag) par kya likhna hai? (Jaise: Hotel, Gate No 2)", "Milne ki Jagah");
+          const label = window.prompt("Label for Flag?", "Meetup Point");
           if (label !== null && label.trim() !== "") {
-              try { await setDoc(doc(db, 'hajj_groups', groupId), { meetupPoint: point, meetupLabel: label }, { merge: true }); showToast("Flag lag gaya!"); } 
-              catch(e) {}
+              try { await setDoc(doc(db, 'hajj_groups', groupId), { meetupPoint: point, meetupLabel: label }, { merge: true }); arrivedAlertSent.current = false; } catch(e) {}
           }
       };
-
       const removeMeetupFlag = async (e) => {
           e.stopPropagation();
           if (!isAdmin || !groupId) return;
-          if(window.confirm("Kya aap Map Flag ko hatana chahte hain?")) {
-              await setDoc(doc(db, 'hajj_groups', groupId), { meetupPoint: null, meetupLabel: "" }, { merge: true });
-          }
-      };
-
-      const handleJoin = async () => {
-        if (!myName.trim() || !joinCode.trim()) { showToast("Name & Code zaroori hai"); return; }
-        if (!user) { showToast("Connecting... Wait"); return; }
-        try {
-            const snap = await getDoc(doc(db, 'hajj_groups', joinCode.trim()));
-            if (snap.exists()) { 
-                const data = snap.data();
-                if(data.banned && data.banned.includes(user.uid)){ showToast("Admin ne aapko is group se ban kiya hua hai."); return; }
-                setGroupId(joinCode.trim()); setActiveTab('home'); 
-            } else showToast("Galat Group Code");
-        } catch(e) { showToast("Database Rules lock hain!"); }
+          if(window.confirm("Remove Flag?")) { await setDoc(doc(db, 'hajj_groups', groupId), { meetupPoint: null, meetupLabel: "" }, { merge: true }); }
       };
 
       const leaveGroup = async () => {
-          if(window.confirm("Kya aap group chhodna chahte hain?")){
+          if(window.confirm("Leave group?")){
               if(user && groupId) { try { await deleteDoc(doc(db, 'hajj_groups', groupId, 'members', user.uid)); } catch(e) {} }
               setGroupId(''); setCompanions([]); setGroupMeta(null); setActiveTab('group');
           }
       };
 
-      const callAdminDirect = () => {
-          const p = groupMeta?.emergencyPhone.replace(/\D/g, ''); window.location.href = `tel:+${p}`; setShowModal(false);
+      const sendChatMessage = async (e) => {
+          e.preventDefault();
+          if(!newMessage.trim() || !groupId || !user) return;
+          const msg = newMessage.trim(); setNewMessage('');
+          try {
+              await addDoc(collection(db, 'hajj_groups', groupId, 'messages'), { text: msg, senderId: user.uid, senderName: myName, color: myColor, timestamp: serverTimestamp() });
+          } catch (e) {}
       };
 
+      const callAdminDirect = () => { const p = groupMeta?.emergencyPhone.replace(/\D/g, ''); window.location.href = `tel:+${p}`; setShowSOSModal(false); };
       const whatsappAdmin = () => {
           const p = groupMeta?.emergencyPhone.replace(/\D/g, ''); 
           const link = myLocation ? `https://www.google.com/maps/search/?api=1&query=${myLocation.lat},${myLocation.lng}` : '';
           window.open(`https://wa.me/${p}?text=🚨 EMERGENCY ALERT 🚨%0A%0AName: ${myName}%0APhone: ${myPhone}%0ALocation: ${link}`, '_blank');
-          setShowModal(false);
+          setShowSOSModal(false);
       };
 
-      // --- New Direction Logic ---
       const getDirectionsToFlag = (e) => {
           e.stopPropagation();
-          if(!myLocation || !groupMeta?.meetupPoint) {
-              showToast("Aapki ya Flag ki location nahi mil rahi."); return;
-          }
-          // Open Native Google Maps for Walking Directions
-          const url = `https://www.google.com/maps/dir/?api=1&origin=${myLocation.lat},${myLocation.lng}&destination=${groupMeta.meetupPoint.lat},${groupMeta.meetupPoint.lng}&travelmode=walking`;
-          window.open(url, '_blank');
+          if(!myLocation || !groupMeta?.meetupPoint) return;
+          window.open(`https://www.google.com/maps/dir/?api=1&origin=${myLocation.lat},${myLocation.lng}&destination=${groupMeta.meetupPoint.lat},${groupMeta.meetupPoint.lng}&travelmode=walking`, '_blank');
       };
 
-      const focusOnMeetup = () => {
-          if(groupMeta?.meetupPoint) setFocusCoords({ ...groupMeta.meetupPoint, t: Date.now() });
-      };
-
-      const recenterMapToMe = () => {
-          if(myLocation) setFocusCoords({ ...myLocation, t: Date.now() });
-      };
-
+      const focusOnMeetup = () => { if(groupMeta?.meetupPoint) setFocusCoords({ ...groupMeta.meetupPoint, t: Date.now() }); };
+      const recenterMapToMe = () => { if(myLocation) setFocusCoords({ ...myLocation, t: Date.now() }); };
       const toggleMapType = () => setMapType(t => t === 'roadmap' ? 'hybrid' : 'roadmap');
-
-      const showToast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 4000); }
+      const toggleLanguage = () => { setLang(l => l === 'hi' ? 'en' : l === 'en' ? 'ur' : 'hi'); setIsMenuOpen(false); }
+      const showToast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 3000); }
       const copyCode = () => { navigator.clipboard.writeText(groupId); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+      const copyUPI = () => { navigator.clipboard.writeText('asaadilas905-1@okaxis'); showToast(t.copied || "Copied!"); }
+
+      const upiUrl = `upi://pay?pa=asaadilas905-1@okaxis&pn=UmrahTracker&cu=INR`;
+      const qrCodeApi = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}`;
+
+      // PLAY STORE: Strict Consent Modal (Blocks app until accepted)
+      if (!hasConsent) {
+          return (
+             <div className={`h-[100dvh] w-full flex items-center justify-center font-sans text-slate-800 bg-slate-900 px-4 ${isUrdu ? 'dir-rtl' : 'dir-ltr'}`}>
+                <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm text-center shadow-2xl animate-in zoom-in-95">
+                    <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-blue-100">
+                        <MapPin size={40} className="fill-blue-100" />
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-800 mb-4">{t.consentTitle}</h3>
+                    <p className="text-slate-600 text-sm font-medium mb-8 leading-relaxed text-left bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-inner">
+                        {t.consentMsg}
+                    </p>
+                    <button onClick={acceptConsent} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-lg py-4 rounded-xl active:scale-95 transition-all shadow-lg shadow-blue-600/30">
+                        {t.agree}
+                    </button>
+                 </div>
+             </div>
+          )
+      }
 
       return (
-        <div className="h-[100dvh] w-full flex justify-center font-sans text-slate-800 bg-slate-900 sm:p-4">
-          <div className="w-full max-w-md flex flex-col h-full bg-slate-50 sm:rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+        <div className={`h-[100dvh] w-full flex justify-center font-sans text-slate-800 bg-slate-900 sm:p-4 ${isUrdu ? 'dir-rtl' : 'dir-ltr'}`}>
+          <div className="w-full max-w-md flex flex-col h-full bg-slate-50 relative overflow-hidden shadow-2xl">
             
-            <div className="p-5 bg-white border-b border-slate-100 flex items-center justify-between z-10 shrink-0">
+            {/* VIP HEADER */}
+            <div className="p-4 bg-white border-b border-slate-200 flex items-center justify-between z-10 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="bg-emerald-500 p-2.5 rounded-2xl text-white shadow-lg shadow-emerald-200"><Navigation size={22} /></div>
+                <button onClick={() => setIsMenuOpen(true)} className="p-2 -ml-1 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors active:scale-95">
+                    <MenuIcon size={26} />
+                </button>
                 <div>
-                   <h1 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none">Saathi <span className="text-emerald-500">VIP</span></h1>
-                   <p className="text-[10px] text-slate-400 font-bold tracking-widest mt-1">Live Hajj Tracker</p>
+                   <h1 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none">{t.appTitle} <span className="text-emerald-500">{t.appPro}</span></h1>
+                   {isAdmin && <span className="text-[9px] font-bold text-amber-600 uppercase tracking-widest bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mt-1 inline-block">Admin</span>}
                 </div>
               </div>
-              {isAdmin && <div className="bg-amber-50 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-200 shadow-sm">
-                  <Crown size={14} className="text-amber-500" /><span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Admin</span>
-              </div>}
+              <div className="flex items-center gap-2">
+                  <button onClick={() => setShowSupportModal(true)} className="bg-rose-50 text-rose-500 p-2 rounded-xl shadow-sm border border-rose-100 hover:bg-rose-100 active:scale-95 transition-all" title="Support Us">
+                      <Heart size={20} className="fill-rose-200" />
+                  </button>
+              </div>
             </div>
 
             {toastMsg && (
-                <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-[0_10px_40px_rgba(0,0,0,0.3)] z-50 flex items-center gap-3 transition-all text-center w-max max-w-[90%] animate-in fade-in slide-in-from-top-4 border border-slate-700">
-                    <CheckCircle2 size={18} className="text-emerald-400 shrink-0" /> <span className="truncate">{toastMsg}</span>
+                <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-2.5 rounded-full text-xs font-bold shadow-2xl z-50 flex items-center gap-2 text-center w-max max-w-[90%] animate-in fade-in slide-in-from-top-4 border border-slate-700">
+                    <CheckCircle2 size={16} className="text-emerald-400 shrink-0" /> <span className="truncate">{toastMsg}</span>
                 </div>
             )}
 
-            <div className="flex-1 overflow-y-auto p-4 pb-36 space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 pb-28 space-y-5">
               
+              {/* GROUP TAB */}
               {activeTab === 'group' && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                   <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><UserIcon size={14} className="text-emerald-500"/> Aapki Details</h3>
-                      <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Aapka Pura Naam" className="w-full p-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50 font-bold mb-3 transition-all" />
-                      <input value={myPhone} onChange={e => setMyPhone(e.target.value)} placeholder="Aapka Mobile No." type="tel" className="w-full p-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50 font-bold transition-all" />
+                <div className="space-y-5 animate-in fade-in duration-300">
+                   <div className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm">
+                      <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><UserIcon size={14} className="text-emerald-500"/> {t.yourDetails}</h3>
+                      <input value={myName} onChange={e => setMyName(e.target.value)} placeholder={t.nameHint} className="w-full p-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 font-bold mb-3 transition-all" />
+                      <input value={myPhone} onChange={e => setMyPhone(e.target.value)} placeholder={t.phoneHint} type="tel" className="w-full p-4 rounded-xl border border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 font-bold transition-all" />
                    </div>
 
                    {!groupId ? (
-                     <div className="space-y-5">
-                        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-3xl border border-emerald-200 relative overflow-hidden shadow-sm">
-                            <Crown size={100} className="absolute -right-6 -bottom-6 text-emerald-500 opacity-5" />
-                            <h3 className="font-black text-emerald-900 text-lg mb-1 relative z-10 tracking-tight">Admin Ban Kar Group Banayein</h3>
-                            <p className="text-[11px] text-emerald-700/80 mb-5 relative z-10 font-medium">Emergency ke liye ek pakka WhatsApp number set karein.</p>
-                            <input value={createEmergencyPhone} onChange={e => setCreateEmergencyPhone(e.target.value)} placeholder="Emergency WhatsApp No." type="tel" className="w-full p-4 rounded-xl mb-4 outline-none border border-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 font-bold bg-white shadow-sm relative z-10 transition-all" />
-                            <button onClick={handleCreate} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm uppercase tracking-wider py-4 rounded-xl shadow-[0_8px_20px_rgba(5,150,105,0.2)] transition-all active:scale-95 active:shadow-none relative z-10">Group Create Karein</button>
+                     <div className="space-y-4">
+                        <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-200 relative overflow-hidden">
+                            <h3 className="font-black text-emerald-900 text-lg mb-1">{t.createGroup}</h3>
+                            <p className="text-[11px] text-emerald-700/80 mb-4 font-bold">{t.createDesc}</p>
+                            <input value={createEmergencyPhone} onChange={e => setCreateEmergencyPhone(e.target.value)} placeholder={t.emergencyHint} type="tel" className="w-full p-4 rounded-xl mb-4 outline-none border border-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 font-bold bg-white shadow-sm transition-all" />
+                            <button onClick={handleCreate} className="w-full bg-emerald-600 text-white font-black text-sm uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-emerald-600/30 active:scale-95 transition-all">{t.createBtn}</button>
                         </div>
-                        
-                        <div className="flex items-center gap-3 px-4">
-                            <div className="h-px bg-slate-200 flex-1"></div>
-                            <span className="text-slate-400 font-bold text-[10px] tracking-widest uppercase">Ya Phir</span>
-                            <div className="h-px bg-slate-200 flex-1"></div>
-                        </div>
-                        
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                            <h3 className="font-black text-slate-800 text-lg mb-1 tracking-tight">Group Join Karein</h3>
-                            <p className="text-[11px] text-slate-500 mb-5 font-medium">Apne Admin ka diya gaya 5-digit code dalein.</p>
+                        <div className="text-center text-slate-400 font-black text-[10px] tracking-widest uppercase">— {t.or} —</div>
+                        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                            <h3 className="font-black text-slate-800 text-lg mb-1">{t.joinGroup}</h3>
+                            <p className="text-[11px] text-slate-500 mb-4 font-bold">{t.joinDesc}</p>
                             <div className="flex gap-2">
-                                <input value={joinCode} onChange={e => setJoinCode(e.target.value)} placeholder="CODE" type="number" className="flex-1 p-4 rounded-xl outline-none border border-slate-100 bg-slate-50 font-mono font-black text-center text-xl focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all" />
-                                <button onClick={handleJoin} className="bg-blue-600 hover:bg-blue-700 text-white px-6 font-black text-sm uppercase tracking-wider rounded-xl shadow-[0_8px_20px_rgba(37,99,235,0.2)] transition-all active:scale-95 active:shadow-none">Join</button>
+                                <input value={joinCode} onChange={e => setJoinCode(e.target.value)} placeholder="CODE" type="number" className="flex-1 p-4 rounded-xl outline-none border border-slate-100 bg-slate-50 font-mono font-black text-center text-xl focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all" />
+                                <button onClick={handleJoin} className="bg-blue-600 text-white px-6 font-black text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/30 active:scale-95 transition-all">{t.joinBtn}</button>
                             </div>
                         </div>
                      </div>
                    ) : (
-                     <div className="bg-slate-900 p-8 rounded-[2.5rem] text-center text-white shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500 rounded-full blur-[60px] opacity-30"></div>
-                        <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-500 rounded-full blur-[60px] opacity-20"></div>
-                        
-                        <UsersRound size={56} className="mx-auto mb-5 text-emerald-400 relative z-10" />
-                        <h2 className="text-3xl font-black mb-2 relative z-10 tracking-tight">Group Active</h2>
-                        <p className="text-xs text-slate-400 mb-8 relative z-10 font-medium">Naye saathiyon ko join karwane ke liye yeh Code bhejein.</p>
-                        
-                        <div className="bg-white/10 backdrop-blur-md border border-white/10 p-6 rounded-3xl mb-8 flex flex-col items-center relative z-10">
-                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Aapka Group Code</p>
+                     <div className="bg-slate-900 p-8 rounded-[2.5rem] text-center text-white shadow-xl relative overflow-hidden">
+                        <UsersRound size={48} className="mx-auto mb-4 text-emerald-400" />
+                        <h2 className="text-2xl font-black mb-1">{t.activeGroup}</h2>
+                        <div className="bg-white/10 backdrop-blur-md border border-white/10 p-5 rounded-[2rem] mt-6 mb-8 flex flex-col items-center">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">{t.groupCode}</p>
                             <div className="flex items-center gap-4">
-                               <span className="text-5xl font-mono font-black text-white tracking-widest">{groupId}</span>
-                               <button onClick={copyCode} className={`p-3 rounded-xl transition-all ${copied ? 'bg-emerald-500 text-white shadow-lg' : 'bg-white/20 text-white hover:bg-white/30'}`}><Copy size={22}/></button>
+                               <span className="text-4xl font-mono font-black text-white tracking-widest">{groupId}</span>
+                               <button onClick={copyCode} className={`p-3 rounded-xl transition-all ${copied ? 'bg-emerald-500 text-white shadow-lg' : 'bg-white/20 text-white hover:bg-white/30'}`}><Copy size={20}/></button>
                             </div>
                         </div>
-                        <button onClick={leaveGroup} className="w-full bg-white/5 text-slate-300 font-bold text-sm uppercase tracking-widest py-4 rounded-xl hover:bg-red-500 hover:text-white transition-all border border-white/10 hover:border-red-500 relative z-10">Group Chhodein</button>
+                        <button onClick={leaveGroup} className="w-full bg-white/5 text-red-400 font-black text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-red-500 hover:text-white transition-all border border-red-500/30">{t.leaveBtn}</button>
                      </div>
                    )}
                 </div>
               )}
 
+              {/* MAP TAB */}
               {activeTab === 'home' && (
                 <div className="space-y-4 animate-in fade-in duration-300">
-                   
                    {!groupId && (
-                      <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl flex items-start gap-4 shadow-sm">
-                         <AlertTriangle size={24} className="shrink-0 text-amber-500 mt-1" />
+                      <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3 shadow-sm">
+                         <AlertTriangle size={20} className="shrink-0 text-amber-500 mt-1" />
                          <div>
-                            <p className="font-black text-amber-900 mb-1">Aap Offline Hain</p>
-                            <p className="text-amber-700/80 text-[11px] mb-3 leading-relaxed font-medium">Map par apne saathiyon ko dekhne ke liye pehle ek Group banayein ya Join karein.</p>
-                            <button onClick={() => setActiveTab('group')} className="bg-amber-200 hover:bg-amber-300 px-4 py-2 rounded-xl text-amber-900 font-bold text-[10px] uppercase tracking-widest transition-colors">Group Page Par Jayein</button>
+                            <p className="font-black text-amber-900 mb-1 text-sm">{t.offlineTitle}</p>
+                            <p className="text-amber-700/80 text-[10px] mb-3 font-bold leading-tight">{t.offlineDesc}</p>
+                            <button onClick={() => setActiveTab('group')} className="bg-amber-200 px-3 py-1.5 rounded-lg text-amber-900 font-bold text-[9px] uppercase tracking-widest">{t.goGroupBtn}</button>
                          </div>
                       </div>
                    )}
 
-                   {/* --- NEW: Advanced Meetup Banner with Directions Button --- */}
                    {groupId && groupMeta?.meetupPoint && (
-                      <div onClick={focusOnMeetup} className="bg-red-50 border-2 border-red-200 p-3.5 pl-4 rounded-[1.5rem] flex items-center justify-between cursor-pointer active:scale-95 transition-all shadow-[0_4px_15px_rgba(239,68,68,0.1)] hover:shadow-[0_4px_20px_rgba(239,68,68,0.2)] group relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-16 h-16 bg-red-500 rounded-full blur-2xl opacity-10 group-hover:opacity-20 transition-opacity"></div>
-                        
-                        <div className="flex flex-col relative z-10">
+                      <div onClick={focusOnMeetup} className="bg-red-50 border border-red-200 p-3 pl-4 rounded-2xl flex items-center justify-between cursor-pointer active:scale-95 transition-all shadow-sm">
+                        <div className="flex flex-col">
                             <p className="text-[9px] text-red-500 font-black uppercase tracking-widest flex items-center gap-1.5 mb-0.5">
-                                <Flag size={10} className="fill-red-500"/> Milne ki Jagah <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                                <Flag size={10} className="fill-red-500"/> {t.meetupPoint} <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
                             </p>
-                            <p className="text-base font-black text-red-800 leading-tight">{groupMeta.meetupLabel}</p>
+                            <p className="text-sm font-black text-red-800 leading-tight line-clamp-1">{groupMeta.meetupLabel}</p>
                         </div>
-
-                        <div className="flex items-center gap-2 relative z-10">
-                           {/* Directions Button for Users */}
-                           <button onClick={getDirectionsToFlag} className="bg-blue-600 text-white px-3 py-2 rounded-xl shadow-md shadow-blue-500/30 hover:bg-blue-700 active:scale-90 transition-all flex items-center gap-1.5 text-xs font-bold">
-                               <Route size={16} /> Raasta 
+                        <div className="flex items-center gap-2 shrink-0">
+                           <button onClick={getDirectionsToFlag} className="bg-blue-600 text-white px-2.5 py-1.5 rounded-lg shadow-md shadow-blue-500/30 active:scale-90 transition-all flex items-center gap-1 text-[10px] font-black uppercase">
+                               <Route size={14} /> {t.route}
                            </button>
-
-                           {/* Remove Button for Admin */}
-                           {isAdmin && (
-                              <button onClick={removeMeetupFlag} className="p-2 bg-white rounded-xl text-red-400 hover:text-red-600 hover:bg-red-100 transition-colors shadow-sm border border-red-100" title="Remove Flag">
-                                  <FlagOff size={18}/>
-                              </button>
-                           )}
+                           {isAdmin && <button onClick={removeMeetupFlag} className="p-1.5 bg-white rounded-lg text-red-400 border border-red-100"><FlagOff size={16}/></button>}
                         </div>
                       </div>
                    )}
 
-                   <div className="relative w-full h-[45vh] min-h-[350px] rounded-[2rem] shadow-md border-4 border-white overflow-hidden bg-slate-200">
-                      <GoogleMapView myLocation={myLocation} companions={companions} isLoaded={isMapLoaded} meetupPoint={groupMeta?.meetupPoint} meetupLabel={groupMeta?.meetupLabel} onMapClick={handleMapClickForMeetup} mapType={mapType} focusCoords={focusCoords} />
-                      
-                      <div className="absolute top-4 left-4 flex flex-col gap-2">
-                          <div className="bg-white/90 backdrop-blur-md px-3 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase shadow-lg text-slate-700 border border-slate-200/50">
-                             Group <span className="text-emerald-600 ml-1">{groupId || '---'}</span>
-                          </div>
-                      </div>
-
-                      <button onClick={toggleMapType} className="absolute top-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-slate-200/50 text-slate-700 hover:bg-slate-50 transition-all active:scale-90" title="Change Map Mode">
-                          <Layers size={22} className={mapType === 'hybrid' ? 'text-emerald-600' : ''} />
+                   <div className="relative w-full h-[48vh] min-h-[350px] rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden bg-slate-200">
+                      <GoogleMapView myLocation={myLocation} companions={companions} isLoaded={isMapLoaded} meetupPoint={groupMeta?.meetupPoint} meetupLabel={groupMeta?.meetupLabel} onMapClick={handleMapClickForMeetup} mapType={mapType} focusCoords={focusCoords} isUrdu={isUrdu} />
+                      <button onClick={toggleMapType} className={`absolute top-4 ${isUrdu ? 'left-4' : 'right-4'} bg-white/90 backdrop-blur-md p-2.5 rounded-xl shadow-lg border border-slate-200/50 text-slate-700 active:scale-90`}>
+                          <Layers size={20} className={mapType === 'hybrid' ? 'text-emerald-600' : ''} />
                       </button>
-
-                      <button onClick={recenterMapToMe} className="absolute bottom-6 right-4 z-20 w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-[0_8px_20px_rgba(37,99,235,0.4)] border-2 border-white hover:bg-blue-700 transition-all active:scale-90">
-                        <Crosshair size={26} />
+                      <button onClick={recenterMapToMe} className={`absolute bottom-6 ${isUrdu ? 'left-4' : 'right-4'} z-20 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg border-2 border-white active:scale-90`}>
+                        <Crosshair size={22} />
                       </button>
-
                       {groupId && isAdmin && !groupMeta?.meetupPoint && (
-                         <div className="absolute bottom-6 left-4 right-20 bg-slate-900/80 backdrop-blur-md text-white text-[10px] p-3 rounded-2xl shadow-xl border border-slate-700 font-medium leading-relaxed pointer-events-none">
-                            👑 <strong className="text-amber-400">Admin Tip:</strong> Map par kisi bhi jagah click karke ek <b>Custom Flag</b> lagayein taaki sab wahan aakar mil sakein.
+                         <div className={`absolute bottom-6 ${isUrdu ? 'right-4 left-16' : 'left-4 right-16'} bg-slate-900/80 backdrop-blur-md text-white text-[9px] p-2.5 rounded-xl shadow-xl border border-slate-700 font-bold pointer-events-none`}>
+                            {t.adminTip}
                          </div>
                       )}
                    </div>
 
                    <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
                       <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between mb-4">
-                          <span className="flex items-center gap-2"><Compass size={14} className="text-blue-500"/> Disha aur Suraksha</span>
-                          {companions.length > 0 && <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">{companions.length} Member</span>}
+                          <span className="flex items-center gap-2"><Compass size={14} className="text-blue-500"/> {t.directions}</span>
+                          {companions.length > 0 && <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{companions.length}</span>}
                       </h3>
                       
                       <div className="space-y-3">
                           {companions.length === 0 ? (
-                              <div className="text-center py-8 bg-slate-50 rounded-2xl border border-slate-100 border-dashed">
-                                  <UsersRound size={32} className="mx-auto text-slate-300 mb-2"/>
-                                  <p className="text-xs text-slate-400 font-bold">Abhi group me sirf aap hain.</p>
+                              <div className="text-center py-6 bg-slate-50 rounded-2xl border border-slate-100 border-dashed">
+                                  <UsersRound size={24} className="mx-auto text-slate-300 mb-2"/>
+                                  <p className="text-[10px] text-slate-400 font-bold">No Members yet.</p>
                               </div>
                           ) : 
                             companions.map(c => {
@@ -570,38 +661,42 @@
                               const bearing = myLocation ? getBearing(myLocation.lat, myLocation.lng, c.lat, c.lng) : 0;
                               const isFar = (dist * 1000) > 300; 
                               const isThisAdmin = groupMeta?.creatorId === c.id;
+                              const distToMeetup = groupMeta?.meetupPoint ? getDistanceFromLatLonInKm(c.lat, c.lng, groupMeta.meetupPoint.lat, groupMeta.meetupPoint.lng) : 0;
+                              const etaString = groupMeta?.meetupPoint ? calculateETA(distToMeetup) : "--";
 
                               return (
-                                <div key={c.id} className={`p-4 rounded-2xl border flex items-center justify-between transition-all relative overflow-hidden ${isFar ? 'bg-red-50 border-red-200 shadow-[0_4px_15px_rgba(239,68,68,0.1)]' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'}`}>
-                                    
+                                <div key={c.id} className={`p-4 rounded-2xl border flex flex-col gap-3 transition-all relative overflow-hidden ${isFar ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'}`}>
                                     {isAdmin && (
-                                        <button onClick={() => handleRemoveUser(c.id, c.name)} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-500 hover:text-white transition-colors" title="Member ko nikalein">
+                                        <button onClick={() => handleRemoveUser(c.id, c.name)} className={`absolute top-2 ${isUrdu ? 'left-2' : 'right-2'} p-1.5 bg-red-100 text-red-600 rounded-full`}>
                                             <UserMinus size={14} />
                                         </button>
                                     )}
-
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-xl shadow-inner border-2 border-white shrink-0 relative" style={{ backgroundColor: c.color || '#3b82f6' }}>
-                                            {c.name.charAt(0)}
-                                            {isThisAdmin && <div className="absolute -top-1 -right-1 bg-amber-400 p-1 rounded-full border-2 border-white shadow-sm"><Crown size={10} className="text-white"/></div>}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black shadow-inner border-2 border-white shrink-0 relative" style={{ backgroundColor: c.color || '#3b82f6' }}>
+                                                {c.name.charAt(0)}
+                                                {isThisAdmin && <div className="absolute -top-1 -right-1 bg-amber-400 p-0.5 rounded-full border border-white"><Crown size={8} className="text-white"/></div>}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black text-slate-800 text-xs flex items-center gap-1.5">
+                                                    {c.name} {isThisAdmin && <span className="text-[7px] bg-amber-100 text-amber-700 px-1 py-0.5 rounded-sm uppercase tracking-widest">Admin</span>}
+                                                </h4>
+                                                <p className={`text-[9px] font-black mt-1 inline-block px-1.5 py-0.5 rounded uppercase tracking-wider ${isFar ? 'text-red-700 bg-red-200' : 'text-emerald-800 bg-emerald-200'}`}>
+                                                   {t.doori}: {dist < 1 ? `${(dist*1000).toFixed(0)}m` : `${dist.toFixed(1)}km`} 
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="font-black text-slate-800 line-clamp-1 pr-6 flex items-center gap-1.5 text-sm">
-                                                {c.name} 
-                                                {isThisAdmin && <span className="text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-sm uppercase tracking-widest border border-amber-200">Admin</span>}
-                                            </h4>
-                                            <p className={`text-[10px] font-black mt-1.5 inline-block px-2 py-1 rounded-lg uppercase tracking-wider ${isFar ? 'text-red-700 bg-red-200' : 'text-emerald-800 bg-emerald-200'}`}>
-                                               Doori: {dist < 1 ? `${(dist*1000).toFixed(0)}m` : `${dist.toFixed(1)}km`} 
-                                               {isFar && <span className="ml-1 animate-pulse">— Door Hai!</span>}
-                                            </p>
+                                        <div className="flex flex-col items-center gap-1 shrink-0">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm border-2 border-white ${isFar ? 'bg-red-500' : 'bg-slate-800'}`} style={{ transform: `rotate(${bearing}deg)` }}>
+                                                <Navigation size={14} className="text-white fill-white" />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-center gap-1.5 min-w-[40px] mt-2">
-                                        <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md transition-transform duration-500 shrink-0 border-2 border-white ${isFar ? 'bg-red-500' : 'bg-slate-800'}`} style={{ transform: `rotate(${bearing}deg)` }}>
-                                            <Navigation size={20} className="text-white fill-white" />
+                                    {groupMeta?.meetupPoint && (
+                                        <div className="bg-white rounded-lg p-2 border border-slate-200 flex items-center justify-between text-[10px] font-black text-slate-500 shadow-sm">
+                                            <span>🚩 ETA:</span><span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{etaString}</span>
                                         </div>
-                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">N ↑</span>
-                                    </div>
+                                    )}
                                 </div>
                               );
                             })
@@ -611,63 +706,198 @@
                 </div>
               )}
 
+              {/* CHAT TAB */}
+              {activeTab === 'chat' && (
+                <div className="flex flex-col h-[75vh] bg-[#efeae2] rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden relative">
+                    <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#475569 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+                    <div className="bg-[#075e54] p-4 text-white font-black flex items-center justify-between shrink-0 relative z-10">
+                        <div className="flex items-center gap-2"><MessageCircle size={18} /> {t.group} {t.chat}</div>
+                    </div>
+                    {!groupId ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-6 text-center relative z-10 bg-white/80">
+                            <MessageCircle size={40} className="mb-3 opacity-30"/>
+                            <p className="font-bold text-xs">{t.offlineDesc}</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-2 chat-scroll relative z-10 flex flex-col">
+                                {messages.length === 0 ? (
+                                    <div className="mx-auto bg-amber-100/80 text-amber-800 text-[10px] font-bold px-3 py-1.5 rounded-lg mt-4 shadow-sm">{t.noMessages}</div>
+                                ) : (
+                                    messages.map((msg, idx) => {
+                                        const isMe = msg.senderId === user.uid;
+                                        const msgTime = msg.timestamp && msg.timestamp.toDate ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                                        return (
+                                            <div key={idx} className={`flex flex-col w-full ${isMe ? 'items-end' : 'items-start'} mb-1`}>
+                                                <div className={`relative px-3 py-1.5 max-w-[85%] shadow-sm flex flex-col ${isMe ? 'msg-send' : 'msg-receive bg-white border border-slate-100 rounded-xl'}`} style={isMe ? { borderRadius: '12px' } : { borderRadius: '12px' }}>
+                                                    {!isMe && <span className="text-[10px] font-black mb-0.5 leading-none" style={{color: msg.color || '#0ea5e9'}}>{msg.senderName}</span>}
+                                                    <span className="text-[13px] text-slate-800 font-medium leading-snug whitespace-pre-wrap">{msg.text}</span>
+                                                    <span className={`text-[8px] mt-0.5 font-bold ${isMe ? 'text-green-800/60 text-right' : 'text-slate-400 text-right'}`}>{msgTime}</span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })
+                                )}
+                                <div ref={chatEndRef} className="h-2 shrink-0" />
+                            </div>
+                            <form onSubmit={sendChatMessage} className="p-3 bg-transparent flex gap-2 shrink-0 relative z-10 pb-6">
+                                <input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder={t.typeMessage} className={`flex-1 bg-white rounded-full px-4 py-3 text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#128c7e] transition-all border border-slate-200 ${isUrdu ? 'pr-4' : 'pl-4'}`} />
+                                <button type="submit" disabled={!newMessage.trim()} className="bg-[#128c7e] text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md active:scale-95 disabled:opacity-50 disabled:bg-slate-300 transition-all shrink-0">
+                                    <Send size={18} className={isUrdu ? 'rotate-180' : '-ml-0.5 mt-0.5'} />
+                                </button>
+                            </form>
+                        </>
+                    )}
+                </div>
+              )}
+
+              {/* SOS TAB */}
               {activeTab === 'sos' && (
-                <div className="pt-8 flex flex-col items-center text-center space-y-8 animate-in zoom-in-95">
-                    <div className="relative mt-4">
-                        <div className="absolute inset-0 bg-red-500 rounded-full blur-[50px] opacity-30 animate-pulse"></div>
-                        <div className="relative w-44 h-44 bg-white border-[10px] border-red-50 rounded-full flex items-center justify-center shadow-2xl shadow-red-500/20">
-                            <ShieldAlert size={72} className="text-red-500" />
+                <div className="pt-8 flex flex-col items-center text-center space-y-6 animate-in zoom-in-95">
+                    <div className="relative mt-2">
+                        <div className="absolute inset-0 bg-red-500 rounded-full blur-[40px] opacity-20 animate-pulse"></div>
+                        <div className="relative w-40 h-40 bg-white border-[8px] border-red-50 rounded-full flex items-center justify-center shadow-xl">
+                            <ShieldAlert size={60} className="text-red-500" />
                         </div>
                     </div>
-                    <div className="px-6">
-                        <h2 className="text-4xl font-black text-slate-800 mb-3 uppercase tracking-tight">Emergency SOS</h2>
-                        <p className="text-slate-500 text-sm leading-relaxed mb-8 font-medium">Bheed me kho jane par dabayein. Admin ko turant Call ya WhatsApp location chali jayegi.</p>
-                        
-                        <div className="bg-white p-5 rounded-3xl border border-slate-100 inline-flex flex-col items-center shadow-sm w-full max-w-[280px]">
-                           <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1.5 flex items-center gap-1.5"><Crown size={12} className="text-amber-500"/> Admin WhatsApp No.</span>
-                           <span className="text-slate-800 font-mono font-black text-2xl tracking-wide">{groupMeta?.emergencyPhone || "---"}</span>
+                    <div className="px-4">
+                        <h2 className="text-3xl font-black text-slate-800 mb-2 uppercase tracking-tight">{t.sosTitle}</h2>
+                        <p className="text-slate-500 text-xs font-bold mb-6">{t.sosDesc}</p>
+                        <div className="bg-white p-4 rounded-2xl border border-slate-100 inline-flex flex-col items-center shadow-sm w-full max-w-[260px]">
+                           <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">{t.adminNo}</span>
+                           <span className="text-slate-800 font-mono font-black text-xl tracking-wide">{groupMeta?.emergencyPhone || "---"}</span>
                         </div>
                     </div>
-                    <button 
-                       onClick={() => setShowModal(true)} disabled={!groupMeta?.emergencyPhone} 
-                       className="w-full max-w-[300px] bg-red-600 text-white font-black text-3xl tracking-wide py-6 rounded-[2rem] shadow-[0_10px_0_rgb(153,27,27)] active:translate-y-2 active:shadow-none transition-all disabled:opacity-50 disabled:shadow-none"
-                    >
-                      HELP ME!
+                    <button onClick={() => setShowSOSModal(true)} disabled={!groupMeta?.emergencyPhone} className="w-full max-w-[280px] bg-red-600 text-white font-black text-2xl tracking-wide py-5 rounded-[2rem] shadow-[0_8px_0_rgb(153,27,27)] active:translate-y-2 active:shadow-none transition-all disabled:opacity-50 disabled:shadow-none">
+                      {t.sosBtn}
                     </button>
                 </div>
               )}
             </div>
 
-            <div className="absolute bottom-6 left-6 right-6 z-40">
-               <div className="glass-nav border border-white/40 p-2.5 rounded-[2rem] flex justify-around shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
-                  {[ { id: 'group', icon: UsersRound, label: "Group" }, { id: 'home', icon: MapPin, label: "Map" }, { id: 'sos', icon: ShieldAlert, label: "SOS" } ].map(tab => (
-                      <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center p-3.5 px-6 rounded-[1.5rem] transition-all duration-300 ${activeTab === tab.id ? 'bg-emerald-500 text-white shadow-[0_8px_20px_rgba(16,185,129,0.3)] scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}>
-                          <tab.icon size={24} className={activeTab === tab.id ? 'stroke-[2.5px]' : ''} />
-                          <span className="text-[10px] font-black mt-1.5 uppercase tracking-widest">{tab.label}</span>
+            {/* Bottom Nav */}
+            <div className="absolute bottom-0 left-0 right-0 z-40 glass-nav border-t border-slate-200">
+               <div className="flex justify-around items-center p-2 max-w-md mx-auto relative">
+                  {[ 
+                      { id: 'group', icon: UsersRound, label: t.group }, 
+                      { id: 'home', icon: MapPin, label: t.map }, 
+                      { id: 'chat', icon: MessageCircle, label: t.chat },
+                      { id: 'sos', icon: ShieldAlert, label: t.sos } 
+                  ].map(tab => (
+                      <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center justify-center w-16 h-14 rounded-2xl transition-all relative ${activeTab === tab.id ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                          {activeTab === tab.id && <div className="absolute top-0 w-8 h-1 bg-emerald-500 rounded-b-full"></div>}
+                          <tab.icon size={22} className={`mb-1 ${activeTab === tab.id ? 'stroke-[2.5px] scale-110' : ''} transition-transform`} />
+                          <span className={`text-[9px] font-black uppercase tracking-wider ${activeTab === tab.id ? 'opacity-100' : 'opacity-0'}`}>{tab.label}</span>
+                          {tab.id === 'chat' && unreadCount > 0 && (
+                              <span className="absolute top-1 right-2 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[16px] shadow-sm border border-white">
+                                  {unreadCount}
+                              </span>
+                          )}
                       </button>
                   ))}
                </div>
             </div>
 
-            {showModal && (
-              <div className="absolute inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300 pb-0 sm:p-6">
-                 <div className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 w-full max-w-md text-center shadow-2xl animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 sm:zoom-in-95">
-                    <div className="w-16 h-1.5 bg-slate-200 rounded-full mx-auto mb-8 sm:hidden"></div>
+            {/* --- MODALS & DRAWERS --- */}
+            
+            {/* SOS Modal */}
+            {showSOSModal && (
+              <div className="absolute inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm pb-4 px-4">
+                 <div className="bg-white rounded-[2rem] p-6 w-full max-w-md text-center shadow-2xl animate-in slide-in-from-bottom-10">
+                    <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
+                    <h3 className="text-2xl font-black text-slate-800 mb-6">Action</h3>
+                    <div className="space-y-3">
+                        <button onClick={callAdminDirect} className="w-full bg-slate-900 text-white font-black text-base py-4 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2"><PhoneCall size={20} /> Direct Call</button>
+                        <button onClick={whatsappAdmin} className="w-full bg-[#25D366] text-white font-black text-base py-4 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2"><MessageCircle size={20} /> WhatsApp</button>
+                        <button onClick={() => setShowSOSModal(false)} className="w-full bg-slate-100 text-slate-500 font-black text-sm py-4 rounded-xl active:scale-95 uppercase tracking-widest mt-2">Cancel</button>
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            {/* Support Modal */}
+            {showSupportModal && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm px-4">
+                 <div className="bg-white rounded-[2rem] p-6 w-full max-w-sm text-center shadow-2xl animate-in zoom-in-95">
+                    <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-rose-100">
+                        <Heart size={32} className="fill-rose-500 animate-pulse" />
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-800 mb-2">{t.supportTitle}</h3>
+                    <p className="text-slate-500 text-[11px] font-bold mb-6 leading-relaxed px-2">{t.supportDesc}</p>
+                    <div className="bg-slate-50 p-4 rounded-3xl mb-6 border border-slate-100">
+                        <img src={qrCodeApi} alt="UPI QR Code" className="mx-auto w-40 h-40 rounded-xl shadow-sm mb-4 bg-white p-2 border border-slate-200" />
+                        <p className="font-mono font-black text-slate-800 text-xs bg-white py-2 px-4 rounded-xl border border-slate-200 shadow-inner">asaadilas905-1@okaxis</p>
+                    </div>
+                    <div className="flex gap-3">
+                        <button onClick={copyUPI} className="flex-1 bg-rose-500 text-white font-black text-sm py-3.5 rounded-xl active:scale-95 transition-all shadow-md shadow-rose-200">{t.copyUpi}</button>
+                        <button onClick={() => setShowSupportModal(false)} className="px-6 bg-slate-200 text-slate-600 font-black text-sm py-3.5 rounded-xl active:scale-95 transition-all uppercase tracking-widest">Close</button>
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            {/* SIDE MENU (SETTINGS / LEGAL) */}
+            {isMenuOpen && (
+              <div className="absolute inset-0 z-50 drawer-overlay flex animate-in fade-in duration-200">
+                 <div className={`bg-white w-[80%] max-w-[300px] h-full shadow-2xl flex flex-col ${isUrdu ? 'ml-auto' : 'mr-auto'} animate-in ${isUrdu ? 'slide-in-from-right' : 'slide-in-from-left'}`}>
+                    <div className="p-6 bg-emerald-600 text-white flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-black tracking-tight">{t.settings}</h2>
+                            <p className="text-xs text-emerald-200 font-medium">Umrah Tracker v1.0</p>
+                        </div>
+                        <button onClick={() => setIsMenuOpen(false)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"><XIcon size={20}/></button>
+                    </div>
                     
-                    <h3 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">Admin Ko Bulaayein</h3>
-                    <p className="text-slate-500 text-sm mb-8 font-medium">Aap emergency me kya karna chahte hain?</p>
-                    
-                    <div className="space-y-4">
-                        <button onClick={callAdminDirect} className="w-full bg-slate-900 text-white font-black tracking-wide text-lg py-5 rounded-2xl shadow-xl hover:bg-slate-800 active:scale-95 transition-all flex items-center justify-center gap-3">
-                            <PhoneCall size={22} /> Direct Call Karein
+                    <div className="flex-1 overflow-y-auto py-4">
+                        <button onClick={() => { setLegalContent('about'); setIsMenuOpen(false); }} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors border-b border-slate-100 text-slate-700">
+                            <Info size={22} className="text-blue-500" /> <span className="font-bold">{t.aboutTitle}</span>
                         </button>
-                        <button onClick={whatsappAdmin} className="w-full bg-[#25D366] text-white font-black tracking-wide text-lg py-5 rounded-2xl shadow-xl shadow-green-500/20 hover:bg-[#1ebe57] active:scale-95 transition-all flex items-center justify-center gap-3">
-                            <MessageCircle size={22} /> WhatsApp Location
+                        <button onClick={() => { setLegalContent('privacy'); setIsMenuOpen(false); }} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors border-b border-slate-100 text-slate-700">
+                            <ShieldCheck size={22} className="text-emerald-500" /> <span className="font-bold">{t.privacyTitle}</span>
                         </button>
-                        <div className="pt-4 pb-2">
-                           <button onClick={() => setShowModal(false)} className="w-full bg-slate-100 text-slate-500 font-black text-sm py-4 rounded-xl active:scale-95 transition-transform uppercase tracking-widest">Cancel</button>
+                        <button onClick={() => { setLegalContent('terms'); setIsMenuOpen(false); }} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors border-b border-slate-100 text-slate-700">
+                            <FileText size={22} className="text-amber-500" /> <span className="font-bold">{t.termsTitle}</span>
+                        </button>
+                        
+                        <div className="mt-8 px-6">
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Language (زبان)</p>
+                            <div className="flex gap-2">
+                                <button onClick={() => setLang('hi')} className={`flex-1 py-2 rounded-lg font-bold text-xs ${lang === 'hi' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600'}`}>Hindi</button>
+                                <button onClick={() => setLang('en')} className={`flex-1 py-2 rounded-lg font-bold text-xs ${lang === 'en' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600'}`}>English</button>
+                                <button onClick={() => setLang('ur')} className={`flex-1 py-2 rounded-lg font-bold text-xs ${lang === 'ur' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600'}`}>Urdu</button>
+                            </div>
                         </div>
                     </div>
+                 </div>
+                 <div className="flex-1" onClick={() => setIsMenuOpen(false)}></div>
+              </div>
+            )}
+
+            {/* LEGAL CONTENT MODAL (About/Privacy/Terms) */}
+            {legalContent && (
+              <div className="absolute inset-0 z-[60] bg-white flex flex-col animate-in slide-in-from-bottom-10 duration-300">
+                 <div className="p-4 border-b border-slate-200 flex items-center gap-4 bg-slate-50">
+                     <button onClick={() => setLegalContent(null)} className="p-2 bg-white rounded-full shadow-sm border border-slate-200 text-slate-600 active:scale-95"><XIcon size={20}/></button>
+                     <h2 className="text-xl font-black text-slate-800">
+                         {legalContent === 'about' ? t.aboutTitle : legalContent === 'privacy' ? t.privacyTitle : t.termsTitle}
+                     </h2>
+                 </div>
+                 <div className="flex-1 overflow-y-auto p-6 bg-white">
+                     <p className="text-slate-600 text-sm leading-loose font-medium whitespace-pre-line">
+                         {legalContent === 'about' ? t.aboutDesc : legalContent === 'privacy' ? t.privacyDesc : t.termsDesc}
+                     </p>
+                     
+                     {/* Strict Play Store Disclosures */}
+                     {legalContent === 'privacy' && (
+                         <div className="mt-8 p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+                             <h4 className="font-black text-blue-900 mb-2">Data Collection & Deletion</h4>
+                             <ul className="list-disc pl-5 text-sm text-blue-800 space-y-2 font-medium">
+                                 <li>We collect location data in real-time to show your position to your group.</li>
+                                 <li>This data is encrypted using Firebase.</li>
+                                 <li>Once you tap <b>"Leave Group"</b>, all your data (Name, Phone, Location, Chats) is instantly and permanently deleted.</li>
+                             </ul>
+                         </div>
+                     )}
                  </div>
               </div>
             )}
