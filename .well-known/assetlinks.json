@@ -1,0 +1,9 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.best247team1_cloud.twa",
+        "sha256_cert_fingerprints": ["B5:AC:A6:A9:A8:1B:73:42:83:51:0C:12:DA:50:F4:2A:15:F5:F4:50:84:10:CC:DF:64:4C:87:0A:3A:94:7F:7E"]
+      }
+    }]
+
