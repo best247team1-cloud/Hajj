@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="google-site-verification" content="rbqmeS8Pa5yglavVRBWZNb2UYKDh503lRBS7JJq7--g" />
   <title>Umrah Tracker - Live GPS</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
@@ -80,7 +79,7 @@
     const FileText = (p) => <SvgIcon paths='<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/>' {...p}/>;
     const ShieldCheck = (p) => <SvgIcon paths='<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/>' {...p}/>;
 
-    // --- Translations (Hindi, English, Urdu) ---
+    // --- Translations ---
     const translations = {
       hi: {
         appTitle: "Umrah", appPro: "Tracker", group: "Group", map: "Map", chat: "Chat", sos: "SOS",
@@ -95,15 +94,15 @@
         sosTitle: "Emergency SOS", sosDesc: "Bheed me kho jane par dabayein. Admin ko Call ya Location jayegi.",
         adminNo: "Admin No.", sosBtn: "HELP ME!", meetupAlert: "🚩 Aap Meetup Point par pahunch gaye hain!",
         adminTip: "Admin Tip: Map par click karke Custom Flag lagayein.", noMessages: "Koi message nahi hai. Pehla message bhejein!",
-        typeMessage: "Message likhein...", route: "Raasta", meetupPoint: "Milne ki Jagah",
-        supportTitle: "Support Karein", supportDesc: "Agar aapko yeh app pasand aayi toh developer ko support karein.", copyUpi: "UPI ID Copy Karein",
+        typeMessage: "Message likhein...", route: "Raasta", meetupPoint: "Milne ki Jagah", removeFlag: "Jhanda Hatayein",
+        supportTitle: "Support Karein", supportDesc: "Agar aapko yeh app pasand aayi toh developer ko support karein taaki hum isey aur behtar bana sakein.", copyUpi: "UPI ID Copy Karein",
         settings: "Settings", aboutTitle: "हमारे बारे में (About Us)", termsTitle: "नियम और शर्तें (Terms)", privacyTitle: "प्राइवेसी पॉलिसी (Privacy)",
         aboutDesc: "Umrah Tracker ek muft app hai jo Hajj aur Umrah ke dauran haajiyon ki suraksha aur unhe aapas me jode rakhne ke liye banayi gayi hai. Iska maqsad bheed me apno ko gum hone se bachana hai.",
         termsDesc: "Is app ka upyog karke, aap apni live location apne group ke sath share karne ke liye sahmat hain. Developer kisi bhi network issue, GPS ki galti, ya kisi nuksaan ke liye zimmewar nahi hai. Yeh app official emergency services ka badal nahi hai.",
         privacyDesc: "Umrah Tracker aapka Naam, Phone Number aur Live GPS Location collect karta hai. Yeh data SIRF aapke private group members ko dikhaya jata hai aur kisi third-party ko nahi becha jata. Jab aap 'Group Chhodein' dabate hain, toh aapka sara data hamare server se turant permanently delete ho jata hai.",
         consentTitle: "स्थान (Location) की अनुमति आवश्यक है",
         consentMsg: "Umrah Tracker aapke 'Live Location' data ko collect karta hai taaki aapke Hajj aur Umrah group ke members aapko Map par real-time me dekh sakein. Yeh aapki suraksha aur bheed me ek dusre ko dhoondhne ke liye zaroori hai. Kya aap iski anumati (permission) dete hain?",
-        agree: "Main Sahmat Hu (I Agree)"
+        agree: "Main Sahmat Hu (I Agree)", copied: "Copy ho gaya!"
       },
       en: {
         appTitle: "Umrah", appPro: "Tracker", group: "Group", map: "Map", chat: "Chat", sos: "SOS",
@@ -118,15 +117,15 @@
         sosTitle: "Emergency SOS", sosDesc: "Press if lost. It will send your location or call Admin.",
         adminNo: "Admin No.", sosBtn: "HELP ME!", meetupAlert: "🚩 You have arrived at the Meetup Point!",
         adminTip: "Admin Tip: Click on map to set a Custom Flag.", noMessages: "No messages yet. Send the first one!",
-        typeMessage: "Type a message...", route: "Route", meetupPoint: "Meetup Point",
-        supportTitle: "Support Us", supportDesc: "If you found this app helpful, consider supporting the developer.", copyUpi: "Copy UPI ID",
+        typeMessage: "Type a message...", route: "Route", meetupPoint: "Meetup Point", removeFlag: "Remove Flag",
+        supportTitle: "Support Us", supportDesc: "If you found this app helpful, consider supporting the developer to keep it ad-free.", copyUpi: "Copy UPI ID",
         settings: "Settings", aboutTitle: "About Us", termsTitle: "Terms & Conditions", privacyTitle: "Privacy Policy",
         aboutDesc: "Umrah Tracker is a free application designed to ensure the safety and connectivity of pilgrims during Hajj and Umrah. Our mission is to prevent people from getting lost in crowded holy sites.",
         termsDesc: "By using this app, you agree to share your location with your private group. The developer is not liable for network failures, GPS inaccuracies, or any damages. This app is not a replacement for official emergency services.",
         privacyDesc: "Umrah Tracker collects your Name, Phone Number, and Live GPS Location. This data is shared STRICTLY with your private group members to enable real-time tracking. We do not sell your data. When you click 'Leave Group', all your data is permanently deleted from our servers.",
         consentTitle: "Location Permission Required",
         consentMsg: "Umrah Tracker collects location data to enable real-time tracking on the map with your Hajj/Umrah group members, even when the app is closed or not in use (background tracking), to ensure your safety in crowded places. Do you agree to share your location?",
-        agree: "I Agree"
+        agree: "I Agree", copied: "Copied!"
       },
       ur: {
         appTitle: "عمرہ", appPro: "ٹریکر", group: "گروپ", map: "نقشہ", chat: "چیٹ", sos: "مدد",
@@ -141,15 +140,15 @@
         sosTitle: "ایمرجنسی SOS", sosDesc: "بھیڑ میں گم ہونے پر دبائیں۔ ایڈمن کو کال یا لوکیشن جائے گی۔",
         adminNo: "ایڈمن نمبر", sosBtn: "مدد کے لیے کال کریں!", meetupAlert: "🚩 آپ ملنے کی جگہ پر پہنچ گئے ہیں!",
         adminTip: "ایڈمن ٹپ: نقشے پر کلک کر کے کسٹم فلیگ (جھنڈا) لگائیں۔", noMessages: "کوئی میسج نہیں ہے۔ پہلا پیغام بھیجیں!",
-        typeMessage: "میسج لکھیں...", route: "راستہ", meetupPoint: "ملنے کی جگہ",
-        supportTitle: "سپورٹ کریں", supportDesc: "اگر آپ کو یہ ایپ پسند آئی تو ڈویلپر کی مدد کریں۔", copyUpi: "UPI ID کاپی کریں",
+        typeMessage: "میسج لکھیں...", route: "راستہ", meetupPoint: "ملنے کی جگہ", removeFlag: "جھنڈا ہٹائیں",
+        supportTitle: "سپورٹ کریں", supportDesc: "اگر آپ کو یہ ایپ پسند آئی تو ڈویلپر کی مدد کریں تاکہ ہم اسے مزید بہتر بنا سکیں۔", copyUpi: "UPI ID کاپی کریں",
         settings: "ترتیبات", aboutTitle: "ہمارے بارے میں", termsTitle: "شرائط و ضوابط", privacyTitle: "پرائیویسی پالیسی",
         aboutDesc: "عمرہ ٹریکر ایک مفت ایپ ہے جسے حج اور عمرہ کے دوران حجاج کی حفاظت اور آپس میں جوڑے رکھنے کے لیے بنایا گیا ہے۔ اس کا مقصد بھیڑ میں اپنوں کو گم ہونے سے بچانا ہے۔",
         termsDesc: "اس ایپ کا استعمال کر کے، آپ اپنی لوکیشن اپنے گروپ کے ساتھ شیئر کرنے کے لیے متفق ہیں۔ ڈویلپر کسی بھی نیٹ ورک کے مسئلے، GPS کی غلطی، یا کسی نقصان کا ذمہ دار نہیں ہے۔",
         privacyDesc: "عمرہ ٹریکر آپ کا نام، فون نمبر اور لائیو جی پی ایس لوکیشن اکٹھا کرتا ہے۔ یہ ڈیٹا صرف آپ کے پرائیویٹ گروپ کے ممبرز کو دکھایا جاتا ہے۔ جب آپ 'گروپ چھوڑیں' دباتے ہیں تو آپ کا سارا ڈیٹا ہمارے سرور سے فوراً ڈیلیٹ ہو جاتا ہے۔",
         consentTitle: "لوکیشن کی اجازت درکار ہے",
         consentMsg: "عمرہ ٹریکر آپ کی لائیو لوکیشن کا ڈیٹا اکٹھا کرتا ہے تاکہ آپ کے حج اور عمرہ گروپ کے ممبرز آپ کو نقشے پر ریئل ٹائم میں دیکھ سکیں۔ یہ آپ کی حفاظت اور بھیڑ میں ایک دوسرے کو تلاش کرنے کے لیے ضروری ہے۔ کیا آپ اس کی اجازت دیتے ہیں؟",
-        agree: "میں متفق ہوں (I Agree)"
+        agree: "میں متفق ہوں (I Agree)", copied: "کاپی ہو گیا!"
       }
     };
 
@@ -176,7 +175,7 @@
     const useGoogleMaps = (apiKey) => {
       const [isLoaded, setIsLoaded] = useState(false);
       useEffect(() => {
-        if (window.google) { setIsLoaded(true); return; }
+        if (window.google && window.google.maps) { setIsLoaded(true); return; }
         if (!apiKey) return;
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
@@ -197,7 +196,7 @@
       const defaultLoc = { lat: 21.4225, lng: 39.8262 };
 
       useEffect(() => {
-        if (isLoaded && mapRef.current && !mapInstanceRef.current && window.google) {
+        if (isLoaded && mapRef.current && !mapInstanceRef.current && window.google && window.google.maps) {
           mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
             center: myLocation || defaultLoc, zoom: 17, disableDefaultUI: true, mapTypeId: mapType || 'roadmap', gestureHandling: 'greedy'
           });
@@ -217,22 +216,24 @@
       }, [focusCoords, isLoaded]);
 
       useEffect(() => {
-        if (mapInstanceRef.current && window.google) {
-          const loc = myLocation || defaultLoc;
+        if (mapInstanceRef.current && window.google && window.google.maps) {
+          if (!myLocation) return; 
           if (!myMarkerRef.current) {
             myMarkerRef.current = new window.google.maps.Marker({
-              position: loc, map: mapInstanceRef.current,
+              position: myLocation, map: mapInstanceRef.current,
               icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#3b82f6', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 3 }, zIndex: 1000
             });
             const myInfo = new window.google.maps.InfoWindow({ content: `<div style="font-weight:800;color:#2563eb;padding:3px;font-size:13px;font-family:sans-serif;">You (Me)</div>`, disableAutoPan: true });
             myMarkerRef.current.addListener('click', () => myInfo.open(mapInstanceRef.current, myMarkerRef.current));
-            mapInstanceRef.current.panTo(loc);
-          } else { myMarkerRef.current.setPosition(loc); }
+            mapInstanceRef.current.panTo(myLocation);
+          } else { 
+            myMarkerRef.current.setPosition(myLocation); 
+          }
         }
       }, [myLocation, isLoaded]);
 
       useEffect(() => {
-          if (mapInstanceRef.current && window.google) {
+          if (mapInstanceRef.current && window.google && window.google.maps) {
               if (meetupMarkerRef.current) meetupMarkerRef.current.setMap(null);
               if (meetupInfoRef.current) meetupInfoRef.current.close();
               if (meetupPoint) {
@@ -250,7 +251,7 @@
       }, [meetupPoint, meetupLabel, isLoaded]);
 
       useEffect(() => {
-        if (mapInstanceRef.current && window.google) {
+        if (mapInstanceRef.current && window.google && window.google.maps) {
           companions.forEach(comp => {
             if (!markersRef.current[comp.id]) {
               const info = new window.google.maps.InfoWindow({ content: `<div style="color:#000;padding:4px;font-family:sans-serif;text-align:center;"><div style="font-weight:900;font-size:14px;">${comp.name}</div></div>`, disableAutoPan:true });
@@ -271,18 +272,19 @@
       }, [companions, isLoaded]);
 
       return (
-        <div ref={mapRef} className="w-full h-full bg-slate-100 flex items-center justify-center">
-             {!isLoaded && <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-emerald-500"></div>}
+        <div className="w-full h-full bg-slate-100 relative overflow-hidden rounded-[2rem]">
+             <div ref={mapRef} className="absolute inset-0 w-full h-full"></div>
+             {!isLoaded && (
+                 <div className="absolute inset-0 bg-slate-100 flex items-center justify-center z-10 pointer-events-none">
+                     <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-emerald-500"></div>
+                 </div>
+             )}
         </div>
       );
     };
 
     function App() {
-      // Play Store Mandatory Consent Check
-      const [hasConsent, setHasConsent] = useState(() => {
-          return localStorage.getItem('umrah_location_consent') === 'true';
-      });
-
+      const [hasConsent, setHasConsent] = useState(() => localStorage.getItem('umrah_location_consent') === 'true');
       const [lang, setLang] = useState('hi');
       const t = translations[lang];
       const isUrdu = lang === 'ur';
@@ -312,7 +314,7 @@
       const [showSOSModal, setShowSOSModal] = useState(false);
       const [showSupportModal, setShowSupportModal] = useState(false);
       const [isMenuOpen, setIsMenuOpen] = useState(false);
-      const [legalContent, setLegalContent] = useState(null); // 'privacy', 'terms', 'about'
+      const [legalContent, setLegalContent] = useState(null);
 
       const [copied, setCopied] = useState(false);
       const [toastMsg, setToastMsg] = useState('');
@@ -329,8 +331,7 @@
       };
 
       useEffect(() => {
-        if(!hasConsent) return; // Do not initialize auth or GPS until consent is given
-
+        if(!hasConsent) return; 
         const initAuth = async () => { try { await signInAnonymously(auth); } catch (e) {} };
         initAuth();
         const unsub = onAuthStateChanged(auth, (u) => {
@@ -345,7 +346,9 @@
         if (!navigator.geolocation || !hasConsent) return;
         const watchId = navigator.geolocation.watchPosition(
           (p) => setMyLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
-          (err) => { setMyLocation({ lat: 21.4225, lng: 39.8262 }); }, 
+          (err) => { 
+              if(err.code === 1) showToast("Location Permission Band Hai!");
+          }, 
           { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
         );
         return () => navigator.geolocation.clearWatch(watchId);
@@ -410,7 +413,7 @@
                 }
                 return msgs;
             });
-            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+            setTimeout(() => { if(chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' }); }, 150);
         });
         return () => { unsubMeta(); unsubMembers(); unsubMsgs(); };
       }, [user, groupId, activeTab]);
@@ -435,7 +438,7 @@
                 const data = snap.data();
                 if(data.banned && data.banned.includes(user.uid)) return;
                 setGroupId(joinCode.trim()); setActiveTab('home'); 
-            } else showToast(t.invalidCode || "Invalid Code");
+            } else showToast("Invalid Code");
         } catch(e) {}
       };
 
@@ -452,15 +455,19 @@
 
       const handleMapClickForMeetup = async (point) => {
           if (!isAdmin || !groupId) return;
-          const label = window.prompt("Label for Flag?", "Meetup Point");
+          const label = window.prompt("Label for Flag?", t.meetupPoint);
           if (label !== null && label.trim() !== "") {
               try { await setDoc(doc(db, 'hajj_groups', groupId), { meetupPoint: point, meetupLabel: label }, { merge: true }); arrivedAlertSent.current = false; } catch(e) {}
           }
       };
+      
       const removeMeetupFlag = async (e) => {
-          e.stopPropagation();
+          if(e) e.stopPropagation();
           if (!isAdmin || !groupId) return;
-          if(window.confirm("Remove Flag?")) { await setDoc(doc(db, 'hajj_groups', groupId), { meetupPoint: null, meetupLabel: "" }, { merge: true }); }
+          if(window.confirm("Kya aap Flag sach me hatana chahte hain?")) { 
+              await setDoc(doc(db, 'hajj_groups', groupId), { meetupPoint: null, meetupLabel: "" }, { merge: true }); 
+              showToast("Flag hata diya gaya!");
+          }
       };
 
       const leaveGroup = async () => {
@@ -499,12 +506,12 @@
       const toggleLanguage = () => { setLang(l => l === 'hi' ? 'en' : l === 'en' ? 'ur' : 'hi'); setIsMenuOpen(false); }
       const showToast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 3000); }
       const copyCode = () => { navigator.clipboard.writeText(groupId); setCopied(true); setTimeout(() => setCopied(false), 2000); }
-      const copyUPI = () => { navigator.clipboard.writeText('asaadilas905-1@okaxis'); showToast(t.copied || "Copied!"); }
+      const copyUPI = () => { navigator.clipboard.writeText('asaadilas905-1@okaxis'); showToast(t.copied); }
 
       const upiUrl = `upi://pay?pa=asaadilas905-1@okaxis&pn=UmrahTracker&cu=INR`;
       const qrCodeApi = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}`;
 
-      // PLAY STORE: Strict Consent Modal (Blocks app until accepted)
+      // PLAY STORE CONSENT MODAL
       if (!hasConsent) {
           return (
              <div className={`h-[100dvh] w-full flex items-center justify-center font-sans text-slate-800 bg-slate-900 px-4 ${isUrdu ? 'dir-rtl' : 'dir-ltr'}`}>
@@ -526,12 +533,12 @@
 
       return (
         <div className={`h-[100dvh] w-full flex justify-center font-sans text-slate-800 bg-slate-900 sm:p-4 ${isUrdu ? 'dir-rtl' : 'dir-ltr'}`}>
-          <div className="w-full max-w-md flex flex-col h-full bg-slate-50 relative overflow-hidden shadow-2xl">
+          <div className="w-full max-w-md flex flex-col h-full bg-slate-50 relative overflow-hidden shadow-2xl sm:rounded-[2.5rem]">
             
             {/* VIP HEADER */}
             <div className="p-4 bg-white border-b border-slate-200 flex items-center justify-between z-10 shrink-0">
               <div className="flex items-center gap-3">
-                <button onClick={() => setIsMenuOpen(true)} className="p-2 -ml-1 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors active:scale-95">
+                <button onClick={() => setIsMenuOpen(true)} className={`p-2 ${isUrdu ? '-mr-1' : '-ml-1'} text-slate-500 hover:bg-slate-100 rounded-xl transition-colors active:scale-95`}>
                     <MenuIcon size={26} />
                 </button>
                 <div>
@@ -612,8 +619,9 @@
                       </div>
                    )}
 
+                   {/* ADMIN'S PROMINENT REMOVE FLAG BUTTON (Inside Meetup Banner) */}
                    {groupId && groupMeta?.meetupPoint && (
-                      <div onClick={focusOnMeetup} className="bg-red-50 border border-red-200 p-3 pl-4 rounded-2xl flex items-center justify-between cursor-pointer active:scale-95 transition-all shadow-sm">
+                      <div onClick={focusOnMeetup} className="bg-red-50 border border-red-200 p-3 pl-4 rounded-[1.5rem] flex items-center justify-between cursor-pointer active:scale-95 transition-all shadow-sm">
                         <div className="flex flex-col">
                             <p className="text-[9px] text-red-500 font-black uppercase tracking-widest flex items-center gap-1.5 mb-0.5">
                                 <Flag size={10} className="fill-red-500"/> {t.meetupPoint} <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
@@ -621,19 +629,32 @@
                             <p className="text-sm font-black text-red-800 leading-tight line-clamp-1">{groupMeta.meetupLabel}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                           <button onClick={getDirectionsToFlag} className="bg-blue-600 text-white px-2.5 py-1.5 rounded-lg shadow-md shadow-blue-500/30 active:scale-90 transition-all flex items-center gap-1 text-[10px] font-black uppercase">
+                           <button onClick={getDirectionsToFlag} className="bg-blue-600 text-white px-3 py-2 rounded-xl shadow-md shadow-blue-500/30 active:scale-90 transition-all flex items-center gap-1 text-[10px] font-black uppercase">
                                <Route size={14} /> {t.route}
                            </button>
-                           {isAdmin && <button onClick={removeMeetupFlag} className="p-1.5 bg-white rounded-lg text-red-400 border border-red-100"><FlagOff size={16}/></button>}
+                           {/* BIG CLEAR ADMIN REMOVE FLAG BUTTON */}
+                           {isAdmin && (
+                              <button onClick={removeMeetupFlag} className="bg-red-100 text-red-600 px-3 py-2 rounded-xl shadow-sm active:scale-90 transition-all flex items-center gap-1 text-[10px] font-black uppercase border border-red-200 hover:bg-red-200">
+                                  <FlagOff size={16}/> {t.removeFlag}
+                              </button>
+                           )}
                         </div>
                       </div>
                    )}
 
-                   <div className="relative w-full h-[48vh] min-h-[350px] rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden bg-slate-200">
+                   <div className="relative w-full h-[48vh] min-h-[350px] shadow-sm border border-slate-200 overflow-hidden bg-slate-200 rounded-[2rem]">
                       <GoogleMapView myLocation={myLocation} companions={companions} isLoaded={isMapLoaded} meetupPoint={groupMeta?.meetupPoint} meetupLabel={groupMeta?.meetupLabel} onMapClick={handleMapClickForMeetup} mapType={mapType} focusCoords={focusCoords} isUrdu={isUrdu} />
                       <button onClick={toggleMapType} className={`absolute top-4 ${isUrdu ? 'left-4' : 'right-4'} bg-white/90 backdrop-blur-md p-2.5 rounded-xl shadow-lg border border-slate-200/50 text-slate-700 active:scale-90`}>
                           <Layers size={20} className={mapType === 'hybrid' ? 'text-emerald-600' : ''} />
                       </button>
+                      
+                      {/* Secondary BIG Remove Flag Button Direct on Map (For Admin only) */}
+                      {groupId && isAdmin && groupMeta?.meetupPoint && (
+                         <button onClick={removeMeetupFlag} className={`absolute top-16 mt-2 ${isUrdu ? 'left-4' : 'right-4'} bg-red-600 backdrop-blur-md p-3 rounded-2xl shadow-lg border-2 border-white text-white active:scale-90 flex items-center justify-center`} title={t.removeFlag}>
+                            <FlagOff size={22} />
+                         </button>
+                      )}
+
                       <button onClick={recenterMapToMe} className={`absolute bottom-6 ${isUrdu ? 'left-4' : 'right-4'} z-20 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg border-2 border-white active:scale-90`}>
                         <Crosshair size={22} />
                       </button>
@@ -654,7 +675,7 @@
                           {companions.length === 0 ? (
                               <div className="text-center py-6 bg-slate-50 rounded-2xl border border-slate-100 border-dashed">
                                   <UsersRound size={24} className="mx-auto text-slate-300 mb-2"/>
-                                  <p className="text-[10px] text-slate-400 font-bold">No Members yet.</p>
+                                  <p className="text-[10px] text-slate-400 font-bold">{t.noMembers}</p>
                               </div>
                           ) : 
                             companions.map(c => {
@@ -733,13 +754,13 @@
                                                 <div className={`relative px-3 py-1.5 max-w-[85%] shadow-sm flex flex-col ${isMe ? 'msg-send' : 'msg-receive bg-white border border-slate-100 rounded-xl'}`} style={isMe ? { borderRadius: '12px' } : { borderRadius: '12px' }}>
                                                     {!isMe && <span className="text-[10px] font-black mb-0.5 leading-none" style={{color: msg.color || '#0ea5e9'}}>{msg.senderName}</span>}
                                                     <span className="text-[13px] text-slate-800 font-medium leading-snug whitespace-pre-wrap">{msg.text}</span>
-                                                    <span className={`text-[8px] mt-0.5 font-bold ${isMe ? 'text-green-800/60 text-right' : 'text-slate-400 text-right'}`}>{msgTime}</span>
+                                                    <span className={`text-[8px] mt-0.5 font-bold flex gap-1 ${isMe ? 'justify-end text-green-800/60' : 'justify-start text-slate-400'}`}>{msgTime}</span>
                                                 </div>
                                             </div>
                                         )
                                     })
                                 )}
-                                <div ref={chatEndRef} className="h-2 shrink-0" />
+                                <div ref={chatEndRef} className="h-4 shrink-0" />
                             </div>
                             <form onSubmit={sendChatMessage} className="p-3 bg-transparent flex gap-2 shrink-0 relative z-10 pb-6">
                                 <input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder={t.typeMessage} className={`flex-1 bg-white rounded-full px-4 py-3 text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#128c7e] transition-all border border-slate-200 ${isUrdu ? 'pr-4' : 'pl-4'}`} />
@@ -790,7 +811,7 @@
                           <tab.icon size={22} className={`mb-1 ${activeTab === tab.id ? 'stroke-[2.5px] scale-110' : ''} transition-transform`} />
                           <span className={`text-[9px] font-black uppercase tracking-wider ${activeTab === tab.id ? 'opacity-100' : 'opacity-0'}`}>{tab.label}</span>
                           {tab.id === 'chat' && unreadCount > 0 && (
-                              <span className="absolute top-1 right-2 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[16px] shadow-sm border border-white">
+                              <span className={`absolute top-1 ${isUrdu ? 'left-2' : 'right-2'} bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[16px] shadow-sm border border-white`}>
                                   {unreadCount}
                               </span>
                           )}
@@ -800,8 +821,6 @@
             </div>
 
             {/* --- MODALS & DRAWERS --- */}
-            
-            {/* SOS Modal */}
             {showSOSModal && (
               <div className="absolute inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm pb-4 px-4">
                  <div className="bg-white rounded-[2rem] p-6 w-full max-w-md text-center shadow-2xl animate-in slide-in-from-bottom-10">
@@ -816,7 +835,6 @@
               </div>
             )}
 
-            {/* Support Modal */}
             {showSupportModal && (
               <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm px-4">
                  <div className="bg-white rounded-[2rem] p-6 w-full max-w-sm text-center shadow-2xl animate-in zoom-in-95">
@@ -837,7 +855,6 @@
               </div>
             )}
 
-            {/* SIDE MENU (SETTINGS / LEGAL) */}
             {isMenuOpen && (
               <div className="absolute inset-0 z-50 drawer-overlay flex animate-in fade-in duration-200">
                  <div className={`bg-white w-[80%] max-w-[300px] h-full shadow-2xl flex flex-col ${isUrdu ? 'ml-auto' : 'mr-auto'} animate-in ${isUrdu ? 'slide-in-from-right' : 'slide-in-from-left'}`}>
@@ -848,7 +865,6 @@
                         </div>
                         <button onClick={() => setIsMenuOpen(false)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"><XIcon size={20}/></button>
                     </div>
-                    
                     <div className="flex-1 overflow-y-auto py-4">
                         <button onClick={() => { setLegalContent('about'); setIsMenuOpen(false); }} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors border-b border-slate-100 text-slate-700">
                             <Info size={22} className="text-blue-500" /> <span className="font-bold">{t.aboutTitle}</span>
@@ -859,7 +875,6 @@
                         <button onClick={() => { setLegalContent('terms'); setIsMenuOpen(false); }} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors border-b border-slate-100 text-slate-700">
                             <FileText size={22} className="text-amber-500" /> <span className="font-bold">{t.termsTitle}</span>
                         </button>
-                        
                         <div className="mt-8 px-6">
                             <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Language (زبان)</p>
                             <div className="flex gap-2">
@@ -874,7 +889,6 @@
               </div>
             )}
 
-            {/* LEGAL CONTENT MODAL (About/Privacy/Terms) */}
             {legalContent && (
               <div className="absolute inset-0 z-[60] bg-white flex flex-col animate-in slide-in-from-bottom-10 duration-300">
                  <div className="p-4 border-b border-slate-200 flex items-center gap-4 bg-slate-50">
@@ -887,12 +901,10 @@
                      <p className="text-slate-600 text-sm leading-loose font-medium whitespace-pre-line">
                          {legalContent === 'about' ? t.aboutDesc : legalContent === 'privacy' ? t.privacyDesc : t.termsDesc}
                      </p>
-                     
-                     {/* Strict Play Store Disclosures */}
                      {legalContent === 'privacy' && (
                          <div className="mt-8 p-4 bg-blue-50 border border-blue-100 rounded-2xl">
                              <h4 className="font-black text-blue-900 mb-2">Data Collection & Deletion</h4>
-                             <ul className="list-disc pl-5 text-sm text-blue-800 space-y-2 font-medium">
+                             <ul className={`list-disc ${isUrdu ? 'pr-5' : 'pl-5'} text-sm text-blue-800 space-y-2 font-medium`}>
                                  <li>We collect location data in real-time to show your position to your group.</li>
                                  <li>This data is encrypted using Firebase.</li>
                                  <li>Once you tap <b>"Leave Group"</b>, all your data (Name, Phone, Location, Chats) is instantly and permanently deleted.</li>
